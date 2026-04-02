@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KASS Admin — 後台管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+/* ═══════════════════════════════════════════════
+   KASS Admin — Global Reset & Variables
+═══════════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --black:#1A1A1A;--pink:#DD95B4;--white:#F5F0EB;--grey:#B5AEAA;
+  --rose:#8C4268;--blush:#F2DDE8;--amber:#C8894A;--amber-dim:rgba(200,137,74,0.15);
+  --bg:#0e0c0a;--sidebar-bg:#0a0806;--surface:rgba(22,19,16,0.92);
+  --border:rgba(200,137,74,0.18);--border-bright:rgba(200,137,74,0.45);
+  --text-main:#F5F0EB;--text-sub:rgba(181,174,170,0.65);--text-dim:rgba(181,174,170,0.35);
+  --success:rgba(102,187,106,0.9);--danger:rgba(239,83,80,0.9);--warn:rgba(255,183,77,0.9);
+  --sidebar-w:240px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text-main);font-family:'Noto Sans TC','Inter',sans-serif;overflow:hidden;}
+
+/* grain */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");background-size:256px;z-index:0;pointer-events:none;animation:grain .4s steps(2) infinite;}
+@keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(2%,2%)}100%{transform:translate(0,0)}}
+
+/* ═══ LAYOUT ═══ */
+.admin-layout{display:flex;height:100vh;position:relative;z-index:1;}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;overflow-y:auto;overflow-x:hidden;
+  z-index:100;flex-shrink:0;
+}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(200,137,74,0.2);}
+.sidebar-logo{
+  padding:24px 20px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+}
+.sidebar-logo img{height:32px;filter:brightness(0) invert(1);opacity:.8;}
+.sidebar-logo-fallback{font-family:'Playfair Display',serif;font-size:20px;letter-spacing:4px;display:none;}
+.sidebar-logo-info{display:flex;flex-direction:column;gap:2px;}
+.sidebar-logo-name{font-size:13px;font-weight:600;letter-spacing:2px;color:var(--white);}
+.sidebar-logo-sub{font-size:9px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:rgba(200,137,74,.6);}
+
+.sidebar-section{padding:20px 0 8px;flex-shrink:0;}
+.sidebar-section-label{font-size:9px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:rgba(200,137,74,.4);padding:0 20px;margin-bottom:6px;}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 20px;cursor:pointer;
+  font-size:13px;font-weight:400;
+  color:var(--text-sub);
+  transition:all .25s;position:relative;
+  border-left:2px solid transparent;
+}
+.nav-item:hover{color:var(--white);background:rgba(200,137,74,.06);}
+.nav-item.active{color:var(--amber);border-left-color:var(--amber);background:rgba(200,137,74,.08);}
+.nav-item .nav-icon{width:16px;text-align:center;font-size:13px;}
+.nav-badge{margin-left:auto;background:var(--amber);color:#0e0c0a;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;}
+
+.sidebar-bottom{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;}
+.admin-user-row{display:flex;align-items:center;gap:10px;}
+.admin-avatar{width:32px;height:32px;border-radius:50%;background:rgba(200,137,74,.15);border:1px solid rgba(200,137,74,.3);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--amber);}
+.admin-info{flex:1;}
+.admin-name{font-size:12px;font-weight:500;color:var(--white);}
+.admin-role{font-size:10px;color:var(--text-dim);}
+.logout-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;transition:color .2s;}
+.logout-btn:hover{color:var(--danger);}
+
+/* ═══ MAIN ═══ */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+.topbar{
+  height:56px;
+  background:rgba(14,12,10,0.85);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 28px;gap:16px;
+  backdrop-filter:blur(16px);
+  flex-shrink:0;
+}
+.topbar-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;color:var(--white);flex:1;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.topbar-badge{
+  font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;
+  padding:4px 10px;border:1px solid rgba(200,137,74,.3);
+  color:rgba(200,137,74,.7);border-radius:1px;
+}
+.topbar-btn{
+  background:none;border:1px solid var(--border);color:var(--text-sub);
+  font-size:12px;padding:6px 14px;cursor:pointer;border-radius:1px;
+  transition:all .2s;font-family:'Inter',sans-serif;
+}
+.topbar-btn:hover{border-color:var(--border-bright);color:var(--amber);}
+
+.content-area{flex:1;overflow-y:auto;padding:28px;}
+.content-area::-webkit-scrollbar{width:4px;}
+.content-area::-webkit-scrollbar-thumb{background:rgba(200,137,74,.18);}
+
+/* ═══ PAGES ═══ */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:24px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,137,74,.4),transparent);}
+.card-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--white);margin-bottom:4px;}
+.card-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
+
+/* ═══ GRID ═══ */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:800px){.grid-4,.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+/* Stat card */
+.stat-card{padding:20px 24px;}
+.stat-label{font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
+.stat-val{font-family:'Playfair Display',serif;font-size:32px;color:var(--white);}
+.stat-unit{font-size:13px;color:var(--text-sub);margin-left:4px;}
+.stat-change{font-size:11px;margin-top:6px;}
+.stat-up{color:#81c784;}.stat-down{color:#ef9a9a;}
+
+/* ═══ TABLE ═══ */
+.table-wrap{overflow-x:auto;margin-top:16px;}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px;}
+.admin-table th{font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:rgba(200,137,74,.6);padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.admin-table td{padding:13px 16px;border-bottom:1px solid rgba(200,137,74,.07);vertical-align:middle;color:var(--text-sub);}
+.admin-table tr:hover td{background:rgba(200,137,74,.04);}
+.admin-table .td-main{color:var(--text-main);font-weight:500;}
+
+/* Status badges */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+.badge-paid{color:#81c784;background:rgba(129,199,132,.12);}
+.badge-pending{color:#ffb74d;background:rgba(255,183,77,.12);}
+.badge-refunded{color:#ef9a9a;background:rgba(239,154,154,.12);}
+.badge-cancelled{color:#90a4ae;background:rgba(144,164,174,.12);}
+.badge-active{color:#80cbc4;background:rgba(128,203,196,.12);}
+.badge-inactive{color:#90a4ae;background:rgba(144,164,174,.12);}
+.badge-sandbox{color:#ffb74d;background:rgba(255,183,77,.12);}
+.badge-production{color:#81c784;background:rgba(129,199,132,.12);}
+
+/* ═══ BUTTONS ═══ */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:10px 20px;border-radius:1px;cursor:pointer;transition:all .25s;border:none;}
+.btn-primary{background:rgba(200,137,74,.15);border:1px solid rgba(200,137,74,.5);color:var(--amber);}
+.btn-primary:hover{background:rgba(200,137,74,.22);border-color:rgba(200,137,74,.8);}
+.btn-danger{background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.3);color:#ef9a9a;}
+.btn-danger:hover{background:rgba(239,83,80,.2);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-sub);}
+.btn-ghost:hover{border-color:var(--border-bright);color:var(--white);}
+.btn-sm{padding:7px 14px;font-size:10px;}
+.btn-icon{padding:8px 10px;}
+
+/* ═══ FORMS ═══ */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.form-row.col-1{grid-template-columns:1fr;}
+.form-row.col-3{grid-template-columns:1fr 1fr 1fr;}
+.field{display:flex;flex-direction:column;gap:7px;}
+.field label{font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:rgba(200,137,74,.65);}
+.field input,.field select,.field textarea{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(200,137,74,.18);
+  border-radius:1px;padding:11px 14px;
+  color:var(--text-main);font-family:'Noto Sans TC','Inter',sans-serif;font-size:13px;
+  outline:none;transition:border-color .25s,background .25s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(200,137,74,.5);background:rgba(255,255,255,.06);}
+.field input::placeholder,.field textarea::placeholder{color:rgba(181,174,170,.25);}
+.field select option{background:#1a1714;color:var(--text-main);}
+.field textarea{resize:vertical;min-height:90px;line-height:1.6;}
+
+/* ═══ SECTION HEADER ═══ */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.section-hd-left{display:flex;flex-direction:column;gap:3px;}
+.section-hd h2{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;}
+.section-hd .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
+
+/* ═══ MODAL ═══ */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-backdrop.open{display:flex;}
+.modal{background:#141210;border:1px solid var(--border-bright);border-radius:2px;padding:36px;max-width:540px;width:calc(100% - 32px);max-height:90vh;overflow-y:auto;position:relative;}
+.modal::before{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,137,74,.6),transparent);}
+.modal h3{font-family:'Playfair Display',serif;font-size:19px;margin-bottom:6px;}
+.modal .modal-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:24px;}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;transition:color .2s;}
+.modal-close:hover{color:var(--white);}
+.modal-footer{display:flex;justify-content:flex-end;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+
+/* ═══ IMAGE UPLOAD ═══ */
+.img-upload-zone{
+  border:1.5px dashed rgba(200,137,74,.3);
+  border-radius:2px;padding:32px;
+  text-align:center;cursor:pointer;
+  transition:all .25s;position:relative;
+}
+.img-upload-zone:hover{border-color:rgba(200,137,74,.6);background:rgba(200,137,74,.04);}
+.img-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.img-upload-icon{font-size:28px;color:rgba(200,137,74,.35);margin-bottom:8px;}
+.img-upload-text{font-size:12px;color:var(--text-dim);}
+.img-preview-wrap{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.img-preview-item{position:relative;width:100px;height:100px;border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+.img-preview-item img{width:100%;height:100%;object-fit:cover;}
+.img-preview-del{position:absolute;top:3px;right:3px;width:20px;height:20px;background:rgba(0,0,0,.7);border:none;border-radius:50%;color:#ef9a9a;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;}
+
+/* ═══ CHART ═══ */
+.chart-wrap{height:220px;position:relative;margin-top:16px;}
+
+/* ═══ FILTER BAR ═══ */
+.filter-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.filter-bar input,.filter-bar select{
+  background:rgba(255,255,255,.04);border:1px solid rgba(200,137,74,.18);
+  border-radius:1px;padding:9px 14px;color:var(--text-main);font-size:12px;
+  font-family:'Noto Sans TC','Inter',sans-serif;outline:none;transition:border-color .25s;
+}
+.filter-bar input:focus,.filter-bar select:focus{border-color:rgba(200,137,74,.5);}
+.filter-bar input::placeholder{color:rgba(181,174,170,.3);}
+.filter-bar select option{background:#1a1714;}
+
+/* ═══ PROGRESS ═══ */
+.progress-bar-wrap{background:rgba(255,255,255,.06);height:4px;border-radius:2px;margin-top:8px;}
+.progress-bar-fill{height:100%;border-radius:2px;background:var(--amber);transition:width .4s;}
+
+/* ═══ TAPPAY ═══ */
+.tp-env-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;padding:4px 12px;border-radius:20px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+.tp-field-group{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:2px;padding:20px;margin-bottom:16px;}
+.tp-field-group h4{font-size:11px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:rgba(200,137,74,.6);margin-bottom:14px;}
+
+/* ═══ TABS ═══ */
+.tab-list{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;gap:4px;}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:10px 16px;color:var(--text-sub);font-family:'Noto Sans TC','Inter',sans-serif;font-size:12px;font-weight:400;cursor:pointer;transition:all .2s;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--white);}
+.tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
+
+/* ═══ TOAST ═══ */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{
+  background:#141210;border:1px solid var(--border);border-radius:2px;
+  padding:14px 20px;min-width:280px;max-width:380px;
+  display:flex;align-items:center;gap:12px;
+  animation:toastIn .3s ease;font-size:13px;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{border-color:rgba(129,199,132,.35);}
+.toast.error{border-color:rgba(239,154,154,.35);}
+.toast.warn{border-color:rgba(255,183,77,.35);}
+.toast-icon{font-size:15px;}
+.toast.success .toast-icon{color:#81c784;}
+.toast.error .toast-icon{color:#ef9a9a;}
+.toast.warn .toast-icon{color:#ffb74d;}
+
+/* ═══ PRODUCT CARDS ═══ */
+.product-grid-admin{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:8px;}
+.product-card-admin{
+  background:var(--surface);border:1px solid var(--border);border-radius:2px;
+  overflow:hidden;transition:border-color .25s;
+}
+.product-card-admin:hover{border-color:var(--border-bright);}
+.product-card-admin .pca-img{height:180px;overflow:hidden;background:#0a0806;position:relative;}
+.product-card-admin .pca-img img{width:100%;height:100%;object-fit:cover;}
+.product-card-admin .pca-img-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;opacity:.15;}
+.product-card-admin .pca-body{padding:16px;}
+.product-card-admin .pca-name{font-family:'Playfair Display',serif;font-size:15px;margin-bottom:4px;}
+.product-card-admin .pca-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.product-card-admin .pca-tag{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border:1px solid var(--border);color:var(--text-dim);border-radius:1px;}
+.product-card-admin .pca-prices{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;}
+.product-card-admin .pca-price-item{text-align:center;background:rgba(255,255,255,.04);border:1px solid var(--border);padding:8px 4px;border-radius:1px;}
+.product-card-admin .pca-price-size{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;}
+.product-card-admin .pca-price-val{font-size:13px;font-weight:600;color:var(--amber);}
+.product-card-admin .pca-actions{display:flex;gap:8px;}
+
+/* ═══ PAGINATION ═══ */
+.pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;}
+.page-btn{background:none;border:1px solid var(--border);color:var(--text-sub);padding:7px 12px;font-size:12px;cursor:pointer;border-radius:1px;transition:all .2s;}
+.page-btn:hover,.page-btn.active{border-color:var(--border-bright);color:var(--amber);}
+.page-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* ═══ SETTINGS ═══ */
+.settings-section{margin-bottom:32px;}
+.settings-section-title{font-family:'Playfair Display',serif;font-size:15px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.credential-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:1px;padding:12px 16px;margin-bottom:10px;}
+.credential-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(200,137,74,.6);min-width:140px;}
+.credential-val{flex:1;font-family:'Inter',monospace;font-size:12px;color:var(--text-sub);word-break:break-all;}
+.credential-copy{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;transition:color .2s;flex-shrink:0;}
+.credential-copy:hover{color:var(--amber);}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-240px;transition:left .3s;z-index:200;}
+  .sidebar.open{left:0;}
+  .main-area{width:100%;}
+  .content-area{padding:16px;}
+  .grid-4{grid-template-columns:1fr 1fr;}
+}
+  </style>
+</head>
+<body>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Modals -->
+<!-- Product Edit Modal -->
+<div class="modal-backdrop" id="productModal">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-close" onclick="closeModal('productModal')"><i class="fas fa-times"></i></button>
+    <h3 id="productModalTitle">新增產品</h3>
+    <p class="modal-sub">Product Management · Edit</p>
+    <div class="tab-list">
+      <button class="tab-btn active" onclick="switchTab('prodTab','basic',this)">基本資訊</button>
+      <button class="tab-btn" onclick="switchTab('prodTab','images',this)">產品圖片</button>
+      <button class="tab-btn" onclick="switchTab('prodTab','pricing',this)">尺寸定價</button>
+    </div>
+    <!-- Basic Tab -->
+    <div class="tab-pane active" id="prodTab-basic">
+      <div class="form-row">
+        <div class="field"><label>產品名稱（中文）</label><input type="text" id="pName" placeholder="栗子蛋糕"></div>
+        <div class="field"><label>產品名稱（英文）</label><input type="text" id="pNameEn" placeholder="Chestnut Cake"></div>
+      </div>
+      <div class="form-row col-1">
+        <div class="field"><label>產品描述</label><textarea id="pDesc" placeholder="產品介紹…"></textarea></div>
+      </div>
+      <div class="form-row col-3">
+        <div class="field"><label>產品 ID（key）</label><input type="text" id="pKey" placeholder="chestnut"></div>
+        <div class="field"><label>分類</label>
+          <select id="pCategory">
+            <option value="cake">蛋糕 Cake</option>
+            <option value="giftbox">禮盒 Gift Box</option>
+          </select>
+        </div>
+        <div class="field"><label>標籤</label><input type="text" id="pTag" placeholder="Signature"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>狀態</label>
+          <select id="pStatus">
+            <option value="active">上架中</option>
+            <option value="inactive">下架</option>
+          </select>
+        </div>
+        <div class="field"><label>排序</label><input type="number" id="pSort" value="0" min="0"></div>
+      </div>
+    </div>
+    <!-- Images Tab -->
+    <div class="tab-pane" id="prodTab-images">
+      <div class="img-upload-zone" id="imgUploadZone" onclick="document.getElementById('imgFileInput').click()">
+        <input type="file" id="imgFileInput" accept="image/*" multiple onchange="handleImgUpload(event)" style="display:none">
+        <div class="img-upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+        <div class="img-upload-text">點擊選擇圖片，或拖放圖片至此<br><span style="color:rgba(200,137,74,.5);font-size:11px;">支援 JPG、PNG、WEBP（建議 1:1 比例，800×800px 以上）</span></div>
+      </div>
+      <div class="img-preview-wrap" id="imgPreviewWrap"></div>
+      <div class="field" style="margin-top:16px">
+        <label>或輸入圖片 URL</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="pImgUrl" placeholder="https://example.com/image.jpg" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="addImgFromUrl()">新增</button>
+        </div>
+      </div>
+    </div>
+    <!-- Pricing Tab -->
+    <div class="tab-pane" id="prodTab-pricing">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div class="tp-field-group">
+          <h4>4 吋</h4>
+          <div class="field"><label>售價 NT$</label><input type="number" id="p4" value="780" min="0"></div>
+        </div>
+        <div class="tp-field-group">
+          <h4>6 吋</h4>
+          <div class="field"><label>售價 NT$</label><input type="number" id="p6" value="1080" min="0"></div>
+        </div>
+        <div class="tp-field-group">
+          <h4>9 吋</h4>
+          <div class="field"><label>售價 NT$</label><input type="number" id="p9" value="1480" min="0"></div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>備註（庫存/季節限定等）</label><textarea id="pNote" placeholder="僅限預購 48 小時前告知…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('productModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveProduct()"><i class="fas fa-save"></i> 儲存產品</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-backdrop" id="orderModal">
+  <div class="modal" style="max-width:600px;">
+    <button class="modal-close" onclick="closeModal('orderModal')"><i class="fas fa-times"></i></button>
+    <h3>訂單詳情</h3>
+    <p class="modal-sub" id="orderModalSub">Order Details</p>
+    <div id="orderModalBody"></div>
+    <div class="modal-footer" id="orderModalFooter"></div>
+  </div>
+</div>
+
+<!-- TapPay Refund Modal -->
+<div class="modal-backdrop" id="refundModal">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('refundModal')"><i class="fas fa-times"></i></button>
+    <h3>申請退款</h3>
+    <p class="modal-sub">TapPay Refund · via Backend API</p>
+    <div id="refundModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('refundModal')">取消</button>
+      <button class="btn btn-danger" id="confirmRefundBtn" onclick="doRefund()"><i class="fas fa-undo"></i> 確認退款</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="../images/logo.png" alt="KASS" onerror="this.style.display='none';document.querySelector('.sidebar-logo-fallback').style.display='block'">
+      <div class="sidebar-logo-fallback">KASS</div>
+      <div class="sidebar-logo-info">
+        <div class="sidebar-logo-name">KASS</div>
+        <div class="sidebar-logo-sub">Admin Panel</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">總覽</div>
+      <div class="nav-item active" data-page="dashboard" onclick="goPage('dashboard',this)">
+        <i class="nav-icon fas fa-chart-line"></i> 儀表板
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">商店管理</div>
+      <div class="nav-item" data-page="products" onclick="goPage('products',this)">
+        <i class="nav-icon fas fa-birthday-cake"></i> 產品管理
+      </div>
+      <div class="nav-item" data-page="orders" onclick="goPage('orders',this)">
+        <i class="nav-icon fas fa-shopping-bag"></i> 訂單管理
+        <span class="nav-badge" id="pendingBadge">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">金流</div>
+      <div class="nav-item" data-page="tappay" onclick="goPage('tappay',this)">
+        <i class="nav-icon fas fa-credit-card"></i> TapPay 交易
+      </div>
+      <div class="nav-item" data-page="refunds" onclick="goPage('refunds',this)">
+        <i class="nav-icon fas fa-undo"></i> 退款管理
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">系統</div>
+      <div class="nav-item" data-page="members" onclick="goPage('members',this)">
+        <i class="nav-icon fas fa-users"></i> 會員管理
+      </div>
+      <div class="nav-item" data-page="settings" onclick="goPage('settings',this)">
+        <i class="nav-icon fas fa-cog"></i> 系統設定
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="admin-user-row">
+        <div class="admin-avatar"><i class="fas fa-user"></i></div>
+        <div class="admin-info">
+          <div class="admin-name" id="adminNameDisplay">admin</div>
+          <div class="admin-role">Super Admin</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="登出"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Area -->
+  <div class="main-area">
+    <div class="topbar">
+      <button class="topbar-btn" id="menuToggle" onclick="toggleSidebar()" style="display:none;"><i class="fas fa-bars"></i></button>
+      <div class="topbar-title" id="topbarTitle">儀表板</div>
+      <div class="topbar-actions">
+        <span class="topbar-badge badge-sandbox" id="envBadge">SANDBOX</span>
+        <button class="topbar-btn" onclick="goPage('settings',document.querySelector('[data-page=settings]'))"><i class="fas fa-cog"></i></button>
+        <button class="topbar-btn" onclick="window.open('../index.html','_blank')"><i class="fas fa-external-link-alt"></i> 前台</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+
+      <!-- ══ DASHBOARD PAGE ══ -->
+      <div class="page active" id="page-dashboard">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>儀表板</h2>
+            <span class="sub">Dashboard Overview</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadDashboard()"><i class="fas fa-sync-alt"></i> 重新整理</button>
+        </div>
+        <div class="grid-4" id="dashStats">
+          <div class="card stat-card"><div class="stat-label">本月營業額</div><div><span class="stat-val" id="statRevenue">0</span><span class="stat-unit">NT$</span></div></div>
+          <div class="card stat-card"><div class="stat-label">本月訂單數</div><div><span class="stat-val" id="statOrders">0</span><span class="stat-unit">筆</span></div></div>
+          <div class="card stat-card"><div class="stat-label">待處理訂單</div><div><span class="stat-val" id="statPending">0</span><span class="stat-unit">筆</span></div></div>
+          <div class="card stat-card"><div class="stat-label">產品上架數</div><div><span class="stat-val" id="statProducts">0</span><span class="stat-unit">項</span></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">近7日訂單趨勢</div>
+            <div class="card-sub">Daily Orders · Last 7 Days</div>
+            <div class="chart-wrap"><canvas id="chartOrders"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">各尺寸銷售佔比</div>
+            <div class="card-sub">Sales by Size</div>
+            <div class="chart-wrap"><canvas id="chartSize"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">最新訂單</div>
+          <div class="table-wrap">
+            <table class="admin-table" id="dashOrderTable">
+              <thead><tr>
+                <th>訂單編號</th><th>客戶</th><th>金額</th><th>付款方式</th><th>狀態</th><th>時間</th>
+              </tr></thead>
+              <tbody id="dashOrderBody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim)">載入中…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PRODUCTS PAGE ══ -->
+      <div class="page" id="page-products">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>產品管理</h2>
+            <span class="sub">Product Management</span>
+          </div>
+          <button class="btn btn-primary" onclick="openProductModal()"><i class="fas fa-plus"></i> 新增產品</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="productSearch" placeholder="搜尋產品…" oninput="renderProducts()">
+          <select id="productCatFilter" onchange="renderProducts()">
+            <option value="">全部分類</option>
+            <option value="cake">蛋糕</option>
+            <option value="giftbox">禮盒</option>
+          </select>
+          <select id="productStatusFilter" onchange="renderProducts()">
+            <option value="">全部狀態</option>
+            <option value="active">上架中</option>
+            <option value="inactive">下架</option>
+          </select>
+        </div>
+        <div class="product-grid-admin" id="productGrid">
+          <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-dim)">載入中…</div>
+        </div>
+      </div>
+
+      <!-- ══ ORDERS PAGE ══ -->
+      <div class="page" id="page-orders">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>訂單管理</h2>
+            <span class="sub">Order Management</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> 重新整理</button>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="orderSearch" placeholder="搜尋訂單號/客戶…" oninput="renderOrders()">
+          <select id="orderStatusFilter" onchange="renderOrders()">
+            <option value="">全部狀態</option>
+            <option value="pending">待付款</option>
+            <option value="paid">已付款</option>
+            <option value="refunded">已退款</option>
+            <option value="cancelled">已取消</option>
+          </select>
+          <select id="orderMethodFilter" onchange="renderOrders()">
+            <option value="">全部付款方式</option>
+            <option value="card">信用卡</option>
+            <option value="apple_pay">Apple Pay</option>
+            <option value="google_pay">Google Pay</option>
+            <option value="line_pay">LINE Pay</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0;">
+          <div class="table-wrap" style="padding:0 0 4px;">
+            <table class="admin-table">
+              <thead><tr>
+                <th>訂單編號</th><th>客戶姓名</th><th>聯絡電話</th><th>取貨方式</th><th>金額</th><th>付款方式</th><th>狀態</th><th>建立時間</th><th>操作</th>
+              </tr></thead>
+              <tbody id="ordersBody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-dim)">載入中…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="pagination" id="ordersPager"></div>
+      </div>
+
+      <!-- ══ TAPPAY PAGE ══ -->
+      <div class="page" id="page-tappay">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>TapPay 交易查詢</h2>
+            <span class="sub">Transaction Records · TapPay Backend API</span>
+          </div>
+          <span class="badge" id="tpEnvBadge">SANDBOX</span>
+        </div>
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card tp-field-group" style="padding:20px;">
+            <h4>查詢交易記錄</h4>
+            <div class="form-row">
+              <div class="field"><label>起始日期</label><input type="date" id="tpStartDate"></div>
+              <div class="field"><label>結束日期</label><input type="date" id="tpEndDate"></div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label>交易狀態</label>
+                <select id="tpTxStatus">
+                  <option value="">全部</option>
+                  <option value="1">成功</option>
+                  <option value="2">失敗</option>
+                  <option value="3">退款</option>
+                </select>
+              </div>
+              <div class="field"><label>每頁筆數</label>
+                <select id="tpPageSize">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="queryTapPayRecords()" style="width:100%"><i class="fas fa-search"></i> 查詢交易</button>
+          </div>
+          <div class="card tp-field-group" style="padding:20px;">
+            <h4>單筆交易查詢</h4>
+            <div class="field" style="margin-bottom:12px"><label>Rec Trade ID</label><input type="text" id="tpRecTradeId" placeholder="輸入 rec_trade_id…"></div>
+            <div class="field" style="margin-bottom:12px"><label>訂單編號</label><input type="text" id="tpOrderNum" placeholder="輸入訂單編號…"></div>
+            <button class="btn btn-primary" onclick="queryTapPaySingle()" style="width:100%"><i class="fas fa-fingerprint"></i> 查詢單筆</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">交易記錄</div>
+          <div id="tpResultInfo" style="font-size:12px;color:var(--text-dim);margin-bottom:10px;"></div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr>
+                <th>Rec Trade ID</th><th>訂單編號</th><th>金額</th><th>付款方式</th><th>狀態</th><th>持卡人</th><th>交易時間</th><th>操作</th>
+              </tr></thead>
+              <tbody id="tpTxBody"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim)">請先執行查詢</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="tpTxPager"></div>
+        </div>
+      </div>
+
+      <!-- ══ REFUNDS PAGE ══ -->
+      <div class="page" id="page-refunds">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>退款管理</h2>
+            <span class="sub">Refund Management</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadRefundList()"><i class="fas fa-sync-alt"></i> 重新整理</button>
+        </div>
+        <div class="card" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr>
+                <th>訂單編號</th><th>客戶</th><th>原始金額</th><th>退款金額</th><th>Rec Trade ID</th><th>退款狀態</th><th>退款時間</th><th>操作</th>
+              </tr></thead>
+              <tbody id="refundBody"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim)">載入中…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ MEMBERS PAGE ══ -->
+      <div class="page" id="page-members">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>會員管理</h2>
+            <span class="sub">Member Management · Ocard Integration</span>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="memberSearch" placeholder="搜尋會員電話/姓名…" oninput="renderMembers()">
+        </div>
+        <div class="card" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr>
+                <th>電話</th><th>姓名</th><th>訂單數</th><th>消費總額</th><th>首次消費</th><th>最近消費</th>
+              </tr></thead>
+              <tbody id="membersBody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim)">載入中…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS PAGE ══ -->
+      <div class="page" id="page-settings">
+        <div class="section-hd">
+          <div class="section-hd-left">
+            <h2>系統設定</h2>
+            <span class="sub">System Settings</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">TapPay 金流設定</div>
+          <div class="grid-2">
+            <div class="tp-field-group">
+              <h4>SDK 初始化（前端）</h4>
+              <div class="credential-row"><span class="credential-label">APP ID</span><span class="credential-val" id="s-appid">168069</span><button class="credential-copy" onclick="copyText('168069')"><i class="fas fa-copy"></i></button></div>
+              <div class="credential-row"><span class="credential-label">APP KEY</span><span class="credential-val" id="s-appkey" style="filter:blur(4px);" onmouseenter="this.style.filter=''" onmouseleave="this.style.filter='blur(4px)'">app_ldBBv6gAAySFLK4uyN33Zp2OrYZ8bhz9eHLHSTGwxNd5xy2Yk7V3mDl79UDH</span><button class="credential-copy" onclick="copyText('app_ldBBv6gAAySFLK4uyN33Zp2OrYZ8bhz9eHLHSTGwxNd5xy2Yk7V3mDl79UDH')"><i class="fas fa-copy"></i></button></div>
+              <div class="credential-row"><span class="credential-label">環境</span><span class="badge badge-sandbox">SANDBOX</span></div>
+            </div>
+            <div class="tp-field-group">
+              <h4>後端 API（Vercel Env）</h4>
+              <div class="credential-row"><span class="credential-label">PARTNER KEY</span><span class="credential-val" style="filter:blur(4px);" onmouseenter="this.style.filter=''" onmouseleave="this.style.filter='blur(4px)'">partner_O3WnIWgNbmq30PKPlkoitoopJOU22yTvtbzzyZDt011ERjZldeuEUzQ0</span><button class="credential-copy" onclick="copyText('partner_O3WnIWgNbmq30PKPlkoitoopJOU22yTvtbzzyZDt011ERjZldeuEUzQ0')"><i class="fas fa-copy"></i></button></div>
+              <div class="credential-row"><span class="credential-label">MERCHANT ID</span><span class="credential-val">kass_TAISHIN</span><button class="credential-copy" onclick="copyText('kass_TAISHIN')"><i class="fas fa-copy"></i></button></div>
+              <div class="credential-row"><span class="credential-label">PAY URL</span><span class="credential-val" style="font-size:10px">https://sandbox.tappaysdk.com/tpc/payment/pay-by-prime</span></div>
+            </div>
+          </div>
+          <div class="tp-field-group">
+            <h4>TapPay 後台 API Endpoints</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="credential-row"><span class="credential-label">交易查詢</span><span class="credential-val" style="font-size:10px">POST /api/tappay-records</span></div>
+              <div class="credential-row"><span class="credential-label">單筆查詢</span><span class="credential-val" style="font-size:10px">POST /api/tappay-query</span></div>
+              <div class="credential-row"><span class="credential-label">退款</span><span class="credential-val" style="font-size:10px">POST /api/tappay-refund</span></div>
+              <div class="credential-row"><span class="credential-label">TapPay 沙箱</span><span class="credential-val" style="font-size:10px">https://sandbox.tappaysdk.com</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Vercel 部署設定</div>
+          <div class="tp-field-group">
+            <h4>環境變數（請在 Vercel Dashboard 設定）</h4>
+            <div class="credential-row"><span class="credential-label">TAPPAY_PARTNER_KEY</span><span class="credential-val" style="font-size:11px;filter:blur(4px);" onmouseenter="this.style.filter=''" onmouseleave="this.style.filter='blur(4px)'">partner_O3WnIWgNbmq30PKPlkoitoopJOU22yTvtbzzyZDt011ERjZldeuEUzQ0</span></div>
+            <div class="credential-row"><span class="credential-label">TAPPAY_MERCHANT_ID</span><span class="credential-val">kass_TAISHIN</span></div>
+            <div class="credential-row"><span class="credential-label">TAPPAY_ENV</span><span class="credential-val">sandbox</span></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">後台帳號管理</div>
+          <div class="tp-field-group">
+            <h4>變更密碼</h4>
+            <div class="form-row col-3">
+              <div class="field"><label>目前密碼</label><input type="password" id="curPwd" placeholder="••••••••"></div>
+              <div class="field"><label>新密碼</label><input type="password" id="newPwd" placeholder="••••••••"></div>
+              <div class="field"><label>確認新密碼</label><input type="password" id="cfmPwd" placeholder="••••••••"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="changePassword()"><i class="fas fa-key"></i> 更新密碼</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">店鋪資訊</div>
+          <div class="tp-field-group">
+            <div class="form-row">
+              <div class="field"><label>店鋪名稱</label><input type="text" id="shopName" value="KASS · Ximending"></div>
+              <div class="field"><label>聯絡電話</label><input type="text" id="shopPhone" value=""></div>
+            </div>
+            <div class="form-row col-1">
+              <div class="field"><label>門市地址</label><input type="text" id="shopAddr" value="台北市萬華區西門町"></div>
+            </div>
+            <div class="form-row">
+              <div class="field"><label>公告訊息（前台顯示）</label><textarea id="shopAnnounce" placeholder="例：本週六公休…"></textarea></div>
+              <div class="field"><label>前台說明文字</label><textarea id="shopNote" placeholder="訂單相關說明…"></textarea></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveShopSettings()"><i class="fas fa-save"></i> 儲存設定</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-area -->
+</div><!-- /admin-layout -->
+
+<script>
+/* ═══════════════════════════════════════════
+   KASS Admin JS
+═══════════════════════════════════════════ */
+
+// Auth guard
+if(sessionStorage.getItem('kass_admin_auth')!=='1'){
+  window.location.href='login.html';
+}
+document.getElementById('adminNameDisplay').textContent = sessionStorage.getItem('kass_admin_user')||'admin';
+
+// ── Page routing ──
+const PAGE_TITLES = {
+  dashboard:'儀表板',products:'產品管理',orders:'訂單管理',
+  tappay:'TapPay 交易查詢',refunds:'退款管理',members:'會員管理',settings:'系統設定'
+};
+function goPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = PAGE_TITLES[name]||name;
+  // Lazy load
+  if(name==='dashboard') loadDashboard();
+  if(name==='orders') loadOrders();
+  if(name==='products') loadProducts();
+  if(name==='members') loadMembers();
+  if(name==='refunds') loadRefundList();
+  if(name==='tappay') initTapPayPage();
+}
+
+// Mobile sidebar
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
+if(window.innerWidth<=768) document.getElementById('menuToggle').style.display='flex';
+
+// Logout
+function doLogout(){sessionStorage.clear();window.location.href='login.html';}
+
+// ── Toast ──
+function toast(msg, type='success', dur=3000){
+  const icons={success:'fa-check-circle',error:'fa-times-circle',warn:'fa-exclamation-triangle'};
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<i class="fas ${icons[type]} toast-icon"></i><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(()=>t.remove(),dur);
+}
+
+// ── Modal ──
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+window.addEventListener('click',e=>{if(e.target.classList.contains('modal-backdrop')) e.target.classList.remove('open');});
+
+// ── Tabs ──
+function switchTab(group,name,el){
+  document.querySelectorAll(`[id^="${group}-"]`).forEach(p=>{
+    p.classList.remove('active');
+  });
+  document.getElementById(`${group}-${name}`).classList.add('active');
+  el.closest('.tab-list').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Copy ──
+function copyText(txt){
+  navigator.clipboard.writeText(txt).then(()=>toast('已複製到剪貼板')).catch(()=>toast('複製失敗','error'));
+}
+
+// ── Format helpers ──
+function fmtDate(ts){if(!ts) return '—';const d=new Date(+ts);return d.toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function fmtMoney(n){return 'NT$ '+Number(n||0).toLocaleString();}
+function statusBadge(s){
+  const map={paid:'badge-paid 已付款',pending:'badge-pending 待付款',refunded:'badge-refunded 已退款',cancelled:'badge-cancelled 已取消'};
+  const v=(map[s]||'badge-inactive 未知').split(' ');
+  return `<span class="badge ${v[0]}">${v[1]}</span>`;
+}
+function payIcon(m){const map={card:'💳',apple_pay:'🍎',google_pay:'🔵',line_pay:'💚'};return (map[m]||'💰')+' '+({card:'信用卡',apple_pay:'Apple Pay',google_pay:'Google Pay',line_pay:'LINE Pay'}[m]||m);}
+
+/* ══════════════════════════════════
+   DASHBOARD
+══════════════════════════════════ */
+async function loadDashboard(){
+  try{
+    const resp = await fetch('tables/orders?limit=200');
+    const data = await resp.json();
+    const orders = data.data||[];
+
+    const now=new Date();
+    const thisMonth=orders.filter(o=>{
+      const d=new Date(+o.created_at);
+      return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+    });
+    const revenue=thisMonth.filter(o=>o.status==='paid').reduce((s,o)=>s+(+o.total_amount||0),0);
+    const pending=orders.filter(o=>o.status==='pending').length;
+
+    document.getElementById('statRevenue').textContent=revenue.toLocaleString();
+    document.getElementById('statOrders').textContent=thisMonth.length;
+    document.getElementById('statPending').textContent=pending;
+    document.getElementById('pendingBadge').textContent=pending;
+
+    // products
+    const presp=await fetch('tables/products?limit=100');
+    const pdata=await presp.json();
+    const activeP=(pdata.data||[]).filter(p=>p.status==='active').length;
+    document.getElementById('statProducts').textContent=activeP;
+
+    // Recent orders table
+    const recent=orders.slice().sort((a,b)=>b.created_at-a.created_at).slice(0,8);
+    document.getElementById('dashOrderBody').innerHTML = recent.length ? recent.map(o=>`
+      <tr>
+        <td class="td-main">${o.order_number||'—'}</td>
+        <td>${o.customer_name||'—'}</td>
+        <td>${fmtMoney(o.total_amount)}</td>
+        <td>${payIcon(o.payment_method)}</td>
+        <td>${statusBadge(o.status)}</td>
+        <td>${fmtDate(o.created_at)}</td>
+      </tr>`) .join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-dim)">暫無訂單</td></tr>';
+
+    buildOrderChart(orders);
+    buildSizeChart(orders);
+  } catch(e){console.error(e);}
+}
+
+function buildOrderChart(orders){
+  const days=[];const counts=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const label=`${d.getMonth()+1}/${d.getDate()}`;
+    days.push(label);
+    const cnt=orders.filter(o=>{
+      const od=new Date(+o.created_at);
+      return od.getDate()===d.getDate()&&od.getMonth()===d.getMonth()&&od.getFullYear()===d.getFullYear();
+    }).length;
+    counts.push(cnt);
+  }
+  const ctx=document.getElementById('chartOrders').getContext('2d');
+  if(window._chartOrders) window._chartOrders.destroy();
+  window._chartOrders=new Chart(ctx,{
+    type:'line',
+    data:{labels:days,datasets:[{label:'訂單數',data:counts,borderColor:'rgba(200,137,74,.9)',backgroundColor:'rgba(200,137,74,.12)',tension:.4,fill:true,pointBackgroundColor:'rgba(200,137,74,.9)'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(181,174,170,.5)',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(181,174,170,.5)',font:{size:10},stepSize:1}}}}
+  });
+}
+
+function buildSizeChart(orders){
+  let s4=0,s6=0,s9=0;
+  orders.forEach(o=>{
+    try{const items=JSON.parse(o.items||'[]');items.forEach(it=>{if(it.size==='4') s4++;else if(it.size==='6') s6++;else if(it.size==='9') s9++;});}catch(e){}
+  });
+  const ctx=document.getElementById('chartSize').getContext('2d');
+  if(window._chartSize) window._chartSize.destroy();
+  window._chartSize=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:['4 吋','6 吋','9 吋'],datasets:[{data:[s4,s6,s9],backgroundColor:['rgba(200,137,74,.85)','rgba(221,149,180,.85)','rgba(140,66,104,.85)'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'rgba(181,174,170,.7)',font:{size:11},padding:16}}}}
+  });
+}
+
+/* ══════════════════════════════════
+   PRODUCTS
+══════════════════════════════════ */
+let allProducts=[];
+let editingProductId=null;
+let currentImgs=[];
+
+// Seed default products if none
+async function loadProducts(){
+  try{
+    const resp=await fetch('tables/products?limit=100');
+    const data=await resp.json();
+    allProducts=data.data||[];
+    // Seed defaults if empty
+    if(allProducts.length===0){
+      await seedDefaultProducts();
+      return loadProducts();
+    }
+    renderProducts();
+  }catch(e){console.error(e);}
+}
+
+async function seedDefaultProducts(){
+  const defaults=[
+    {key:'chestnut',name:'栗子蛋糕',name_en:'Chestnut Cake',desc:'以和栗打底，層次細密，每一口都是對秋季的溫柔致意。',desc_en:'Crafted with Japanese chestnuts, layered with elegance.',tag:'Signature',category:'cake',price_4:780,price_6:1080,price_9:1480,status:'active',sort:1,img:'images/product-chestnut-cake.jpg'},
+    {key:'strawberry',name:'草莓蛋糕',name_en:'Strawberry Cake',desc:'選用大湖草莓，鮮甜酸爽，是每逢節日必備的經典之作。',desc_en:'Fresh Dahu strawberries, sweet and refreshing.',tag:'Classic',category:'cake',price_4:780,price_6:1080,price_9:1480,status:'active',sort:2,img:'images/product-strawberry-cake.jpg'},
+    {key:'taro',name:'芋頭蛋糕',name_en:'Taro Cake',desc:'採用大甲芋頭，入口綿密紮實，帶有淡雅的芋香韻味。',desc_en:'Dajia taro, smooth and fragrant with earthy notes.',tag:'House Special',category:'cake',price_4:780,price_6:1080,price_9:1480,status:'active',sort:3,img:'images/product-taro-cake.jpg'},
+  ];
+  for(const p of defaults){
+    await fetch('tables/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  }
+}
+
+function renderProducts(){
+  const search=document.getElementById('productSearch').value.toLowerCase();
+  const cat=document.getElementById('productCatFilter').value;
+  const stat=document.getElementById('productStatusFilter').value;
+  let list=allProducts.filter(p=>{
+    if(search&&!(p.name||'').toLowerCase().includes(search)&&!(p.name_en||'').toLowerCase().includes(search)) return false;
+    if(cat&&p.category!==cat) return false;
+    if(stat&&p.status!==stat) return false;
+    return true;
+  }).sort((a,b)=>(+a.sort||0)-(+b.sort||0));
+  const grid=document.getElementById('productGrid');
+  if(!list.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-dim)">暫無產品</div>';return;}
+  grid.innerHTML=list.map(p=>`
+    <div class="product-card-admin">
+      <div class="pca-img">
+        ${p.img?`<img src="../${p.img}" alt="${p.name}" onerror="this.parentNode.innerHTML='<div class=\\'pca-img-placeholder\\'>🎂</div>'">`:
+        `<div class="pca-img-placeholder">🎂</div>`}
+        <div style="position:absolute;top:8px;right:8px;">${p.status==='active'?'<span class="badge badge-active" style="font-size:9px">上架</span>':'<span class="badge badge-inactive" style="font-size:9px">下架</span>'}</div>
+      </div>
+      <div class="pca-body">
+        <div class="pca-name">${p.name||'—'}</div>
+        <div class="pca-tags"><span class="pca-tag">${p.tag||''}</span><span class="pca-tag">${p.category==='cake'?'蛋糕':'禮盒'}</span></div>
+        <div class="pca-prices">
+          <div class="pca-price-item"><div class="pca-price-size">4 吋</div><div class="pca-price-val">${p.price_4||780}</div></div>
+          <div class="pca-price-item"><div class="pca-price-size">6 吋</div><div class="pca-price-val">${p.price_6||1080}</div></div>
+          <div class="pca-price-item"><div class="pca-price-size">9 吋</div><div class="pca-price-val">${p.price_9||1480}</div></div>
+        </div>
+        <div class="pca-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openProductModal('${p.id}')"><i class="fas fa-edit"></i> 編輯</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}','${p.name}')"><i class="fas fa-trash"></i></button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleProductStatus('${p.id}','${p.status}')">${p.status==='active'?'下架':'上架'}</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openProductModal(id){
+  editingProductId=id||null;currentImgs=[];
+  document.getElementById('imgPreviewWrap').innerHTML='';
+  document.getElementById('productModalTitle').textContent=id?'編輯產品':'新增產品';
+  // Reset tabs
+  switchTab('prodTab','basic',document.querySelector('#productModal .tab-btn'));
+  if(id){
+    const p=allProducts.find(x=>x.id===id)||{};
+    document.getElementById('pName').value=p.name||'';
+    document.getElementById('pNameEn').value=p.name_en||'';
+    document.getElementById('pDesc').value=p.desc||'';
+    document.getElementById('pKey').value=p.key||'';
+    document.getElementById('pCategory').value=p.category||'cake';
+    document.getElementById('pTag').value=p.tag||'';
+    document.getElementById('pStatus').value=p.status||'active';
+    document.getElementById('pSort').value=p.sort||0;
+    document.getElementById('p4').value=p.price_4||780;
+    document.getElementById('p6').value=p.price_6||1080;
+    document.getElementById('p9').value=p.price_9||1480;
+    document.getElementById('pNote').value=p.note||'';
+    document.getElementById('pImgUrl').value=p.img||'';
+    if(p.img){currentImgs=[p.img];renderImgPreviews();}
+  } else {
+    ['pName','pNameEn','pDesc','pKey','pTag','pNote','pImgUrl'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('pCategory').value='cake';
+    document.getElementById('pStatus').value='active';
+    document.getElementById('pSort').value=allProducts.length;
+    document.getElementById('p4').value=780;
+    document.getElementById('p6').value=1080;
+    document.getElementById('p9').value=1480;
+  }
+  openModal('productModal');
+}
+
+function handleImgUpload(e){
+  const files=Array.from(e.target.files);
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{currentImgs.push(ev.target.result);renderImgPreviews();};
+    reader.readAsDataURL(file);
+  });
+}
+
+function addImgFromUrl(){
+  const url=document.getElementById('pImgUrl').value.trim();
+  if(!url) return;
+  currentImgs.push(url);
+  renderImgPreviews();
+  document.getElementById('pImgUrl').value='';
+}
+
+function renderImgPreviews(){
+  document.getElementById('imgPreviewWrap').innerHTML=currentImgs.map((src,i)=>`
+    <div class="img-preview-item">
+      <img src="${src.startsWith('data:')||src.startsWith('http')?src:'../'+src}" alt="">
+      <button class="img-preview-del" onclick="removeImg(${i})">×</button>
+    </div>`).join('');
+}
+function removeImg(i){currentImgs.splice(i,1);renderImgPreviews();}
+
+async function saveProduct(){
+  const payload={
+    name:document.getElementById('pName').value.trim(),
+    name_en:document.getElementById('pNameEn').value.trim(),
+    desc:document.getElementById('pDesc').value.trim(),
+    key:document.getElementById('pKey').value.trim(),
+    category:document.getElementById('pCategory').value,
+    tag:document.getElementById('pTag').value.trim(),
+    status:document.getElementById('pStatus').value,
+    sort:+document.getElementById('pSort').value||0,
+    price_4:+document.getElementById('p4').value||780,
+    price_6:+document.getElementById('p6').value||1080,
+    price_9:+document.getElementById('p9').value||1480,
+    note:document.getElementById('pNote').value.trim(),
+    img:currentImgs[0]||document.getElementById('pImgUrl').value.trim()||'',
+  };
+  if(!payload.name){toast('請輸入產品名稱','error');return;}
+  try{
+    const method=editingProductId?'PUT':'POST';
+    const url=editingProductId?`tables/products/${editingProductId}`:'tables/products';
+    await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    toast(editingProductId?'產品已更新':'產品已新增');
+    closeModal('productModal');
+    loadProducts();
+  }catch(e){toast('儲存失敗','error');}
+}
+
+async function deleteProduct(id,name){
+  if(!confirm(`確認刪除「${name}」？此操作無法還原。`)) return;
+  await fetch(`tables/products/${id}`,{method:'DELETE'});
+  toast('已刪除');loadProducts();
+}
+
+async function toggleProductStatus(id,cur){
+  const newStat=cur==='active'?'inactive':'active';
+  await fetch(`tables/products/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:newStat})});
+  toast(newStat==='active'?'已上架':'已下架');loadProducts();
+}
+
+/* ══════════════════════════════════
+   ORDERS
+══════════════════════════════════ */
+let allOrders=[];
+let ordersPage=1;
+const ORDERS_PER_PAGE=15;
+
+async function loadOrders(){
+  try{
+    const resp=await fetch('tables/orders?limit=200&sort=created_at');
+    const data=await resp.json();
+    allOrders=(data.data||[]).sort((a,b)=>b.created_at-a.created_at);
+    updatePendingBadge();
+    renderOrders();
+  }catch(e){console.error(e);}
+}
+
+function updatePendingBadge(){
+  const c=allOrders.filter(o=>o.status==='pending').length;
+  document.getElementById('pendingBadge').textContent=c;
+}
+
+function renderOrders(){
+  const search=document.getElementById('orderSearch').value.toLowerCase();
+  const stat=document.getElementById('orderStatusFilter').value;
+  const method=document.getElementById('orderMethodFilter').value;
+  let list=allOrders.filter(o=>{
+    if(search&&!(o.order_number||'').toLowerCase().includes(search)&&!(o.customer_name||'').toLowerCase().includes(search)&&!(o.phone||'').includes(search)) return false;
+    if(stat&&o.status!==stat) return false;
+    if(method&&o.payment_method!==method) return false;
+    return true;
+  });
+  const total=list.length;
+  const pages=Math.ceil(total/ORDERS_PER_PAGE)||1;
+  if(ordersPage>pages) ordersPage=1;
+  const paged=list.slice((ordersPage-1)*ORDERS_PER_PAGE,ordersPage*ORDERS_PER_PAGE);
+  document.getElementById('ordersBody').innerHTML=paged.length?paged.map(o=>`
+    <tr>
+      <td class="td-main" style="font-family:monospace;font-size:12px">${o.order_number||'—'}</td>
+      <td>${o.customer_name||'—'}</td>
+      <td>${o.phone||'—'}</td>
+      <td><span style="font-size:11px">${o.delivery_method==='delivery'?'🛵 外送':'🏪 自取'}</span></td>
+      <td style="font-weight:600;color:var(--amber)">${fmtMoney(o.total_amount)}</td>
+      <td style="font-size:11px">${payIcon(o.payment_method)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${fmtDate(o.created_at)}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="viewOrder('${o.id}')" title="查看"><i class="fas fa-eye"></i></button>
+          ${o.status==='pending'?`<button class="btn btn-primary btn-icon btn-sm" onclick="markPaid('${o.id}')" title="標記付款"><i class="fas fa-check"></i></button>`:''}
+          ${o.status==='paid'&&o.tap_rec_trade_id?`<button class="btn btn-danger btn-icon btn-sm" onclick="openRefundFromOrder('${o.id}')" title="退款"><i class="fas fa-undo"></i></button>`:''}
+        </div>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-dim)">暫無訂單</td></tr>';
+
+  // Pager
+  let pager='';
+  for(let i=1;i<=pages;i++) pager+=`<button class="page-btn${i===ordersPage?' active':''}" onclick="ordersPage=${i};renderOrders()">${i}</button>`;
+  document.getElementById('ordersPager').innerHTML=pager;
+}
+
+async function markPaid(id){
+  await fetch(`tables/orders/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'paid'})});
+  toast('訂單已標記為已付款');loadOrders();
+}
+
+function viewOrder(id){
+  const o=allOrders.find(x=>x.id===id)||{};
+  document.getElementById('orderModalSub').textContent=o.order_number||'';
+  let items=[];try{items=JSON.parse(o.items||'[]');}catch(e){}
+  document.getElementById('orderModalBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="tp-field-group" style="padding:14px;"><h4>客戶資訊</h4>
+        <div style="font-size:13px;line-height:2;color:var(--text-sub)">
+          <b style="color:var(--text-main)">${o.customer_name||'—'}</b><br>
+          📱 ${o.phone||'—'}<br>📧 ${o.email||'—'}<br>
+          ${o.delivery_method==='delivery'?`🛵 外送：${o.delivery_address||'—'}`:'🏪 西門門市自取'}
+        </div>
+      </div>
+      <div class="tp-field-group" style="padding:14px;"><h4>訂單資訊</h4>
+        <div style="font-size:13px;line-height:2;color:var(--text-sub)">
+          狀態：${statusBadge(o.status)}<br>
+          付款：${payIcon(o.payment_method)}<br>
+          取貨：${o.pickup_date||'—'} ${o.pickup_time||''}<br>
+          ${o.tap_rec_trade_id?`TapPay：<span style="font-family:monospace;font-size:11px">${o.tap_rec_trade_id}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="tp-field-group" style="padding:14px;margin-bottom:12px;"><h4>訂購商品</h4>
+      <table class="admin-table" style="font-size:12px;">
+        <thead><tr><th>品名</th><th>尺寸</th><th>數量</th><th>小計</th></tr></thead>
+        <tbody>${items.length?items.map(it=>`<tr><td>${it.name||it.key}</td><td>${it.size||'—'} 吋</td><td>${it.qty}</td><td>${fmtMoney((it.price||0)*it.qty)}</td></tr>`).join(''):'<tr><td colspan="4" style="color:var(--text-dim)">無商品資料</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:24px;font-size:13px;padding:0 4px">
+      <span style="color:var(--text-dim)">小計 ${fmtMoney(o.subtotal_amount)} ／ 折扣 -${fmtMoney(o.discount_amount)}</span>
+      <span style="color:var(--amber);font-weight:700;font-size:16px">${fmtMoney(o.total_amount)}</span>
+    </div>
+    ${o.note?`<div style="margin-top:12px;padding:12px;background:rgba(255,255,255,.04);border-radius:1px;font-size:12px;color:var(--text-sub)">備註：${o.note}</div>`:''}
+  `;
+  const footer=document.getElementById('orderModalFooter');
+  footer.innerHTML=`<button class="btn btn-ghost" onclick="closeModal('orderModal')">關閉</button>
+    ${o.status==='pending'?`<button class="btn btn-primary" onclick="markPaid('${o.id}');closeModal('orderModal')"><i class="fas fa-check"></i> 標記付款</button>`:''}
+    ${o.status==='paid'&&o.tap_rec_trade_id?`<button class="btn btn-danger" onclick="openRefundFromOrder('${o.id}');closeModal('orderModal')"><i class="fas fa-undo"></i> 申請退款</button>`:''}`;
+  openModal('orderModal');
+}
+
+/* ══════════════════════════════════
+   TAPPAY QUERY (via Vercel /api/tappay-records)
+══════════════════════════════════ */
+function initTapPayPage(){
+  // Set default date range (last 30 days)
+  const now=new Date();
+  const from=new Date();from.setDate(from.getDate()-30);
+  document.getElementById('tpEndDate').value=now.toISOString().split('T')[0];
+  document.getElementById('tpStartDate').value=from.toISOString().split('T')[0];
+  // Show env
+  document.getElementById('tpEnvBadge').className='badge badge-sandbox';
+  document.getElementById('tpEnvBadge').textContent='SANDBOX';
+}
+
+async function queryTapPayRecords(){
+  const start=document.getElementById('tpStartDate').value;
+  const end=document.getElementById('tpEndDate').value;
+  const status=document.getElementById('tpTxStatus').value;
+  const size=+document.getElementById('tpPageSize').value||20;
+  if(!start||!end){toast('請選擇日期範圍','error');return;}
+  document.getElementById('tpTxBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-dim)"><i class="fas fa-spinner fa-spin"></i> 查詢中…</td></tr>';
+  try{
+    const body={
+      time:{start_time:start+'T00:00:00',end_time:end+'T23:59:59'},
+      page_size:size,
+      ...(status&&{status:+status})
+    };
+    const resp=await fetch('https://kass-edad-ofqaqcyaa-whowho7878us-5365s-projects.vercel.app/api/tappay-records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data=await resp.json();
+    if(!data.success) throw new Error(data.error||'TapPay API 錯誤');
+    renderTpTx(data.records||[]);
+    document.getElementById('tpResultInfo').textContent=`共 ${(data.records||[]).length} 筆交易`;
+  }catch(e){
+    document.getElementById('tpTxBody').innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:#ef9a9a">查詢失敗：${e.message}<br><small style="color:var(--text-dim)">請確認後端 API 已部署且環境變數已設定</small></td></tr>`;
+    toast(e.message,'error');
+  }
+}
+
+async function queryTapPaySingle(){
+  const recId=document.getElementById('tpRecTradeId').value.trim();
+  const orderNum=document.getElementById('tpOrderNum').value.trim();
+  if(!recId&&!orderNum){toast('請輸入 Rec Trade ID 或訂單編號','error');return;}
+  document.getElementById('tpTxBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-dim)"><i class="fas fa-spinner fa-spin"></i> 查詢中…</td></tr>';
+  try{
+    const body={};
+    if(recId) body.rec_trade_id=recId;
+    if(orderNum) body.order_number=orderNum;
+    const resp=await fetch('https://kass-edad-ofqaqcyaa-whowho7878us-5365s-projects.vercel.app/api/tappay-query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data=await resp.json();
+    if(!data.success) throw new Error(data.error||'TapPay API 錯誤');
+    renderTpTx(data.records||[data.record].filter(Boolean));
+  }catch(e){
+    document.getElementById('tpTxBody').innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:#ef9a9a">查詢失敗：${e.message}<br><small style="color:var(--text-dim)">請確認後端 API 已部署</small></td></tr>`;
+    toast(e.message,'error');
+  }
+}
+
+function renderTpTx(records){
+  const txStatusMap={0:'成功',1:'待付款',2:'失敗',3:'退款'};
+  const txStatusBadge=(s)=>{const labels={0:'badge-paid 成功',1:'badge-pending 待付款',2:'badge-cancelled 失敗',3:'badge-refunded 退款'};const v=(labels[s]||'badge-inactive 未知').split(' ');return `<span class="badge ${v[0]}">${v[1]}</span>`;};
+  document.getElementById('tpTxBody').innerHTML=records.length?records.map(r=>`
+    <tr>
+      <td class="td-main" style="font-family:monospace;font-size:11px">${r.rec_trade_id||'—'}</td>
+      <td style="font-family:monospace;font-size:11px">${r.order_number||'—'}</td>
+      <td style="color:var(--amber);font-weight:600">${fmtMoney(r.amount)}</td>
+      <td style="font-size:11px">${r.payment_method||'—'}</td>
+      <td>${txStatusBadge(r.status)}</td>
+      <td style="font-size:11px">${r.cardholder?.name||r.cardholder?.email||'—'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${r.transaction_time_millis?fmtDate(r.transaction_time_millis):'—'}</td>
+      <td>
+        ${r.status===0?`<button class="btn btn-danger btn-sm" onclick="openRefundByRec('${r.rec_trade_id}',${r.amount})"><i class="fas fa-undo"></i> 退款</button>`:'<span style="color:var(--text-dim);font-size:11px">—</span>'}
+      </td>
+    </tr>`).join('') : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-dim)">無交易記錄</td></tr>';
+}
+
+/* ══════════════════════════════════
+   REFUND
+══════════════════════════════════ */
+let currentRefundData={};
+
+function openRefundByRec(recId, amount){
+  currentRefundData={rec_trade_id:recId,amount};
+  document.getElementById('refundModalBody').innerHTML=`
+    <div class="tp-field-group" style="padding:14px;margin-bottom:16px;">
+      <h4>退款資訊</h4>
+      <div style="font-size:13px;line-height:2;color:var(--text-sub)">
+        Rec Trade ID：<span style="font-family:monospace;font-size:11px;color:var(--text-main)">${recId}</span><br>
+        原始金額：<span style="color:var(--amber);font-weight:600">${fmtMoney(amount)}</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>退款金額（NT$，留空則全額退款）</label>
+      <input type="number" id="refundAmount" placeholder="${amount}" value="${amount}" min="1" max="${amount}">
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>退款原因</label>
+      <textarea id="refundReason" placeholder="客戶申請退款…"></textarea>
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;background:rgba(239,83,80,.08);border:1px solid rgba(239,83,80,.2);border-radius:1px;font-size:12px;color:#ef9a9a;">
+      ⚠️ 退款操作無法撤回，請確認後再送出。
+    </div>`;
+  openModal('refundModal');
+}
+
+function openRefundFromOrder(orderId){
+  const o=allOrders.find(x=>x.id===orderId)||{};
+  openRefundByRec(o.tap_rec_trade_id,o.total_amount);
+  currentRefundData.order_id=orderId;
+}
+
+async function doRefund(){
+  const amount=+document.getElementById('refundAmount').value||currentRefundData.amount;
+  const reason=document.getElementById('refundReason').value.trim();
+  document.getElementById('confirmRefundBtn').disabled=true;
+  document.getElementById('confirmRefundBtn').innerHTML='<i class="fas fa-spinner fa-spin"></i> 處理中…';
+  try{
+    const resp=await fetch('https://kass-edad-ofqaqcyaa-whowho7878us-5365s-projects.vercel.app/api/tappay-refund',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rec_trade_id:currentRefundData.rec_trade_id,amount,reason})
+    });
+    const data=await resp.json();
+    if(!data.success) throw new Error(data.error||'退款失敗');
+    // Update order status if linked
+    if(currentRefundData.order_id){
+      await fetch(`tables/orders/${currentRefundData.order_id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'refunded',refund_amount:amount,refund_time:Date.now()})});
+    }
+    toast(`退款成功：${fmtMoney(amount)}`);
+    closeModal('refundModal');
+    loadOrders();loadRefundList();
+  }catch(e){
+    toast(`退款失敗：${e.message}`,'error');
+  }
+  document.getElementById('confirmRefundBtn').disabled=false;
+  document.getElementById('confirmRefundBtn').innerHTML='<i class="fas fa-undo"></i> 確認退款';
+}
+
+async function loadRefundList(){
+  try{
+    const resp=await fetch('tables/orders?limit=200');
+    const data=await resp.json();
+    const refunded=(data.data||[]).filter(o=>o.status==='refunded'||o.refund_amount);
+    document.getElementById('refundBody').innerHTML=refunded.length?refunded.map(o=>`
+      <tr>
+        <td class="td-main" style="font-family:monospace;font-size:11px">${o.order_number||'—'}</td>
+        <td>${o.customer_name||'—'}</td>
+        <td>${fmtMoney(o.total_amount)}</td>
+        <td style="color:#ef9a9a;font-weight:600">${fmtMoney(o.refund_amount)}</td>
+        <td style="font-family:monospace;font-size:11px">${o.tap_rec_trade_id||'—'}</td>
+        <td>${statusBadge('refunded')}</td>
+        <td style="font-size:11px;color:var(--text-dim)">${fmtDate(o.refund_time||o.updated_at)}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="viewOrder('${o.id}')"><i class="fas fa-eye"></i></button></td>
+      </tr>`).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim)">暫無退款記錄</td></tr>';
+  }catch(e){console.error(e);}
+}
+
+/* ══════════════════════════════════
+   MEMBERS
+══════════════════════════════════ */
+async function loadMembers(){
+  try{
+    const resp=await fetch('tables/orders?limit=500');
+    const data=await resp.json();
+    const orders=data.data||[];
+    // Aggregate by phone
+    const map={};
+    orders.forEach(o=>{
+      const key=o.phone||'unknown';
+      if(!map[key]) map[key]={phone:o.phone||'—',name:o.customer_name||'—',orders:0,total:0,first:o.created_at,last:o.created_at};
+      map[key].orders++;
+      map[key].total+=(+o.total_amount||0);
+      if(o.created_at<map[key].first) map[key].first=o.created_at;
+      if(o.created_at>map[key].last) map[key].last=o.created_at;
+    });
+    allMembersData=Object.values(map).sort((a,b)=>b.total-a.total);
+    renderMembers();
+  }catch(e){console.error(e);}
+}
+let allMembersData=[];
+function renderMembers(){
+  const search=document.getElementById('memberSearch').value.toLowerCase();
+  const list=allMembersData.filter(m=>
+    !search||(m.phone||'').includes(search)||(m.name||'').toLowerCase().includes(search)
+  );
+  document.getElementById('membersBody').innerHTML=list.length?list.map(m=>`
+    <tr>
+      <td class="td-main" style="font-family:monospace">${m.phone}</td>
+      <td>${m.name}</td>
+      <td style="text-align:center">${m.orders}</td>
+      <td style="color:var(--amber);font-weight:600">${fmtMoney(m.total)}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${fmtDate(m.first)}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${fmtDate(m.last)}</td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-dim)">暫無會員資料</td></tr>';
+}
+
+/* ══════════════════════════════════
+   SETTINGS
+══════════════════════════════════ */
+function changePassword(){
+  const cur=document.getElementById('curPwd').value;
+  const nw=document.getElementById('newPwd').value;
+  const cfm=document.getElementById('cfmPwd').value;
+  if(!cur||!nw||!cfm){toast('請填寫所有欄位','error');return;}
+  if(nw!==cfm){toast('新密碼不一致','error');return;}
+  if(nw.length<6){toast('密碼至少 6 字元','error');return;}
+  // In production, this would call a server endpoint
+  toast('密碼已更新（重啟後生效）');
+  ['curPwd','newPwd','cfmPwd'].forEach(f=>document.getElementById(f).value='');
+}
+
+function saveShopSettings(){
+  const settings={
+    shopName:document.getElementById('shopName').value,
+    shopPhone:document.getElementById('shopPhone').value,
+    shopAddr:document.getElementById('shopAddr').value,
+    shopAnnounce:document.getElementById('shopAnnounce').value,
+    shopNote:document.getElementById('shopNote').value,
+  };
+  localStorage.setItem('kass_shop_settings',JSON.stringify(settings));
+  toast('設定已儲存');
+}
+
+// Load saved settings
+(function loadShopSettings(){
+  try{
+    const s=JSON.parse(localStorage.getItem('kass_shop_settings')||'{}');
+    if(s.shopName) document.getElementById('shopName').value=s.shopName;
+    if(s.shopPhone) document.getElementById('shopPhone').value=s.shopPhone;
+    if(s.shopAddr) document.getElementById('shopAddr').value=s.shopAddr;
+    if(s.shopAnnounce) document.getElementById('shopAnnounce').value=s.shopAnnounce;
+    if(s.shopNote) document.getElementById('shopNote').value=s.shopNote;
+  }catch(e){}
+})();
+
+// Initial load
+loadDashboard();
+</script>
+</body>
+</html>

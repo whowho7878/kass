@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KASS Admin — 後台登入</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --black:#1A1A1A;--pink:#DD95B4;--white:#F5F0EB;--grey:#B5AEAA;
+      --rose:#8C4268;--blush:#F2DDE8;--amber:#C8894A;
+      --border:rgba(200,137,74,0.25);
+    }
+    html,body{height:100%;background:#0e0c0a;color:var(--white);font-family:'Inter',sans-serif;overflow:hidden;}
+    body::before{
+      content:'';position:fixed;inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+      background-size:256px;z-index:0;pointer-events:none;
+      animation:grainShift 0.4s steps(2) infinite;
+    }
+    @keyframes grainShift{0%{transform:translate(0,0)}50%{transform:translate(2%,3%)}100%{transform:translate(0,0)}}
+    .film-strip{position:fixed;top:0;bottom:0;width:32px;background:#0a0806;z-index:10;overflow:hidden;}
+    .film-strip.left{left:0;border-right:1px solid rgba(200,137,74,0.12);}
+    .film-strip.right{right:0;border-left:1px solid rgba(200,137,74,0.12);}
+    .sprocket{position:absolute;left:50%;transform:translateX(-50%);width:14px;height:22px;border:1.5px solid rgba(200,137,74,0.3);border-radius:3px;}
+    .glow-blob{position:fixed;border-radius:50%;filter:blur(120px);z-index:1;pointer-events:none;}
+    .glow-1{width:600px;height:600px;background:rgba(200,137,74,0.07);top:-200px;right:-100px;}
+    .glow-2{width:400px;height:400px;background:rgba(140,66,104,0.06);bottom:-100px;left:50px;}
+    .frame-num{position:fixed;font-family:'Inter',monospace;font-size:9px;font-weight:300;letter-spacing:1px;color:rgba(200,137,74,0.2);pointer-events:none;z-index:2;}
+    .fn-tl{top:16px;left:44px;}.fn-tr{top:16px;right:44px;}.fn-bl{bottom:16px;left:44px;}.fn-br{bottom:16px;right:44px;}
+    .login-wrapper{position:relative;z-index:5;display:flex;align-items:center;justify-content:center;height:100vh;padding:0 48px;}
+    .login-card{
+      width:100%;max-width:420px;
+      background:rgba(20,17,14,0.88);
+      border:1px solid var(--border);
+      border-radius:2px;padding:56px 48px 48px;
+      backdrop-filter:blur(24px);position:relative;
+    }
+    .login-card::before{content:'';position:absolute;top:0;left:32px;right:32px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,137,74,0.65),transparent);}
+    .login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:40px;gap:10px;}
+    .login-logo img{height:44px;filter:brightness(0) invert(1);opacity:0.85;}
+    .login-logo-fallback{font-family:'Playfair Display',serif;font-size:28px;color:var(--white);letter-spacing:6px;display:none;}
+    .logo-label{font-size:9px;font-weight:400;letter-spacing:4px;text-transform:uppercase;color:rgba(200,137,74,0.65);}
+    .login-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:400;color:var(--white);text-align:center;margin-bottom:6px;}
+    .login-sub{font-size:10px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:rgba(181,174,170,0.45);text-align:center;margin-bottom:36px;}
+    .form-group{margin-bottom:20px;}
+    .form-label{display:block;font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:rgba(200,137,74,0.7);margin-bottom:8px;}
+    .form-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(200,137,74,0.18);border-radius:1px;padding:13px 40px 13px 16px;color:var(--white);font-family:'Inter',sans-serif;font-size:14px;font-weight:300;outline:none;transition:border-color .3s,background .3s;}
+    .form-input:focus{border-color:rgba(200,137,74,0.55);background:rgba(255,255,255,0.06);}
+    .form-input::placeholder{color:rgba(181,174,170,0.28);}
+    .input-wrap{position:relative;}
+    .input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(181,174,170,0.3);font-size:12px;cursor:pointer;transition:color .3s;}
+    .input-icon:hover{color:var(--amber);}
+    .login-btn{width:100%;background:transparent;border:1px solid rgba(200,137,74,0.45);color:var(--amber);font-family:'Inter',sans-serif;font-size:10px;font-weight:500;letter-spacing:3px;text-transform:uppercase;padding:15px;cursor:pointer;transition:all .3s;margin-top:8px;position:relative;overflow:hidden;}
+    .login-btn::before{content:'';position:absolute;inset:0;background:rgba(200,137,74,0.08);transform:translateX(-100%);transition:transform .3s;}
+    .login-btn:hover::before{transform:translateX(0);}
+    .login-btn:hover{border-color:rgba(200,137,74,0.85);color:#e8a055;}
+    .login-btn:disabled{opacity:.5;cursor:not-allowed;}
+    .login-error{display:none;background:rgba(229,115,115,0.1);border:1px solid rgba(229,115,115,0.28);border-radius:1px;padding:11px 16px;font-size:12px;color:#ef9a9a;margin-bottom:16px;text-align:center;}
+    .login-error.show{display:block;}
+    .login-footer{margin-top:32px;text-align:center;font-size:10px;color:rgba(181,174,170,0.2);letter-spacing:1px;}
+  </style>
+</head>
+<body>
+<div class="film-strip left" id="filmLeft"></div>
+<div class="film-strip right" id="filmRight"></div>
+<div class="glow-blob glow-1"></div>
+<div class="glow-blob glow-2"></div>
+<div class="frame-num fn-tl">KASS ADMIN · 2026</div>
+<div class="frame-num fn-tr">v2.0 · SANDBOX</div>
+<div class="frame-num fn-bl">後台管理系統</div>
+<div class="frame-num fn-br">AUTHORIZED ONLY</div>
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="../images/logo.png" alt="KASS"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div class="login-logo-fallback">KASS</div>
+      <div class="logo-label">Admin Control Panel</div>
+    </div>
+    <h1 class="login-title">後台管理</h1>
+    <p class="login-sub">Back Office · Authorized Access</p>
+    <div class="login-error" id="loginError">帳號或密碼錯誤，請重試</div>
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="adminUser">管理員帳號</label>
+        <div class="input-wrap">
+          <input type="text" id="adminUser" class="form-input" placeholder="admin" autocomplete="username">
+          <i class="fas fa-user input-icon"></i>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="adminPass">密碼</label>
+        <div class="input-wrap">
+          <input type="password" id="adminPass" class="form-input" placeholder="••••••••" autocomplete="current-password">
+          <i class="fas fa-eye input-icon" id="togglePass" onclick="togglePwd()"></i>
+        </div>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">
+        <span id="loginBtnText">進入後台</span>
+      </button>
+    </form>
+    <div class="login-footer">© 2026 KASS · Ximending · All rights reserved</div>
+  </div>
+</div>
+
+<script>
+  // Film sprockets
+  ['filmLeft','filmRight'].forEach(id=>{
+    const el=document.getElementById(id);
+    let h='';
+    for(let i=0;i<Math.ceil(window.innerHeight/36)+2;i++)
+      h+=`<div class="sprocket" style="top:${i*36+8}px"></div>`;
+    el.innerHTML=h;
+  });
+
+  function togglePwd(){
+    const i=document.getElementById('adminPass');
+    const ic=document.getElementById('togglePass');
+    i.type=i.type==='password'?'text':'password';
+    ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');
+  }
+
+  // Default: admin / kass2026
+  const CREDS=[{u:'admin',p:'kass2026'},{u:'kass',p:'kass2026'}];
+  function doLogin(e){
+    e.preventDefault();
+    const u=document.getElementById('adminUser').value.trim();
+    const p=document.getElementById('adminPass').value;
+    const errEl=document.getElementById('loginError');
+    const btn=document.getElementById('loginBtn');
+    const txt=document.getElementById('loginBtnText');
+    errEl.classList.remove('show');
+    txt.textContent='驗證中…';btn.disabled=true;
+    setTimeout(()=>{
+      if(CREDS.some(c=>c.u===u&&c.p===p)){
+        sessionStorage.setItem('kass_admin_auth','1');
+        sessionStorage.setItem('kass_admin_user',u);
+        txt.textContent='✓ 登入成功';
+        setTimeout(()=>{window.location.href='index.html';},500);
+      } else {
+        errEl.classList.add('show');
+        txt.textContent='進入後台';btn.disabled=false;
+      }
+    },700);
+  }
+  if(sessionStorage.getItem('kass_admin_auth')==='1') window.location.href='index.html';
+</script>
+</body>
+</html>
