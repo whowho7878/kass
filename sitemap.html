@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KASS — 網站架構規劃</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:      #DD95B4;
+      --pink-dim:  rgba(221,149,180,0.15);
+      --pink-line: rgba(221,149,180,0.35);
+      --black:     #0e0c09;
+      --dark:      #141210;
+      --card:      #1a1714;
+      --card2:     #211e1a;
+      --border:    rgba(255,255,255,0.07);
+      --grey:      #7a7470;
+      --white:     #F5F0EB;
+      --amber:     #C8894A;
+      --amber-dim: rgba(200,137,74,0.12);
+      --teal:      #4a8c8c;
+      --purple:    rgba(110,60,150,0.25);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      font-weight: 400;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+      padding: 60px 60px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 40px;
+    }
+    .page-header-left { max-width: 600px; }
+    .doc-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 16px;
+    }
+    .page-title {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 900; line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+    .page-title span { color: var(--pink); }
+    .page-subtitle {
+      margin-top: 16px;
+      font-size: 13px; font-weight: 300;
+      color: var(--grey); line-height: 1.8;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .page-header-right {
+      text-align: right;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); line-height: 2.2;
+      flex-shrink: 0;
+    }
+    .page-header-right strong { color: var(--pink); display: block; font-size: 11px; }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      padding: 24px 60px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .legend-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-right: 8px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--grey);
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-brand    { background: var(--pink); }
+    .dot-product  { background: var(--amber); }
+    .dot-culture  { background: var(--teal); }
+    .dot-system   { background: #7a6aff; }
+    .dot-proto    { background: rgba(255,255,255,0.25); }
+    .legend-tag {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+    .tag-done  { background: rgba(221,149,180,0.2); color: var(--pink); }
+    .tag-proto { background: rgba(200,137,74,0.2); color: var(--amber); }
+    .tag-plan  { background: rgba(255,255,255,0.05); color: var(--grey); border: 1px solid var(--border); }
+
+    /* ── MAIN CANVAS ── */
+    main { padding: 60px; }
+
+    /* ── SECTION LABEL ── */
+    .sec-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 32px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .sec-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* ══════════════════════════════
+       PART 1 — SINGLE PAGE SCROLL MAP
+       ══════════════════════════════ */
+    .scroll-map {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 900px;
+      margin: 0 auto 100px;
+      position: relative;
+    }
+
+    /* Vertical spine line */
+    .scroll-map::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom,
+        transparent,
+        var(--pink-line) 5%,
+        var(--pink-line) 95%,
+        transparent);
+      transform: translateX(-50%);
+    }
+
+    .scroll-section {
+      display: grid;
+      grid-template-columns: 1fr 60px 1fr;
+      align-items: center;
+      gap: 0;
+      position: relative;
+    }
+
+    /* Left card */
+    .scroll-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px 28px;
+      position: relative;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .scroll-card:hover {
+      border-color: var(--pink-line);
+      box-shadow: 0 0 30px rgba(221,149,180,0.06);
+    }
+    .scroll-card.amber:hover {
+      border-color: rgba(200,137,74,0.4);
+      box-shadow: 0 0 30px rgba(200,137,74,0.06);
+    }
+    .scroll-card.teal:hover {
+      border-color: rgba(74,140,140,0.4);
+      box-shadow: 0 0 30px rgba(74,140,140,0.06);
+    }
+    .scroll-card.purple-card:hover {
+      border-color: rgba(122,106,255,0.4);
+      box-shadow: 0 0 30px rgba(122,106,255,0.06);
+    }
+
+    /* Right = info / empty */
+    .scroll-info {
+      padding: 0 0 0 32px;
+    }
+    .scroll-info.right-align {
+      padding: 0 32px 0 0;
+      text-align: right;
+    }
+
+    /* Spine node */
+    .spine-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      z-index: 2;
+      padding: 20px 0;
+    }
+    .spine-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--pink);
+      background: var(--black);
+      flex-shrink: 0;
+    }
+    .spine-dot.amber { border-color: var(--amber); }
+    .spine-dot.teal  { border-color: var(--teal); }
+    .spine-dot.purple { border-color: #7a6aff; }
+    .spine-dot.white  { border-color: rgba(255,255,255,0.3); }
+
+    /* connector lines left/right of spine */
+    .connector {
+      display: flex; align-items: center;
+      position: relative;
+    }
+    .connector::after {
+      content: '';
+      position: absolute;
+      top: 50%; right: 0;
+      width: 28px; height: 1px;
+      background: var(--pink-line);
+    }
+    .connector.from-right::after {
+      right: auto; left: 0;
+    }
+    .connector.amber::after  { background: rgba(200,137,74,0.35); }
+    .connector.teal::after   { background: rgba(74,140,140,0.35); }
+    .connector.purple::after { background: rgba(122,106,255,0.35); }
+    .connector.dim::after    { background: var(--border); }
+
+    /* Card interior */
+    .card-num {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 6px;
+    }
+    .card-num.amber  { color: var(--amber); }
+    .card-num.teal   { color: var(--teal); }
+    .card-num.purple { color: #7a6aff; }
+    .card-num.dim    { color: var(--grey); }
+
+    .card-title {
+      font-size: 15px; font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white); margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .card-desc {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey); line-height: 1.75;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .card-tags {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .card-tag {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 3px 8px;
+    }
+
+    /* Info side */
+    .info-label {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 8px;
+    }
+    .info-items { list-style: none; }
+    .info-items li {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+      line-height: 1.9;
+      padding-left: 12px;
+      position: relative;
+    }
+    .info-items li::before {
+      content: '·';
+      position: absolute; left: 0;
+      color: var(--pink);
+    }
+    .info-items li.amber::before { color: var(--amber); }
+    .info-items li.teal::before  { color: var(--teal); }
+
+    /* Full-width divider sections (quotes, etc.) */
+    .scroll-full {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .full-card {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(221,149,180,0.05) 0%, transparent 60%);
+      border: 1px solid var(--pink-line);
+      border-left: 3px solid var(--pink);
+      padding: 28px 40px;
+      text-align: center;
+    }
+    .full-card.amber-card {
+      background: linear-gradient(135deg, var(--amber-dim) 0%, transparent 60%);
+      border-color: rgba(200,137,74,0.35);
+      border-left-color: var(--amber);
+    }
+    .full-quote {
+      font-size: clamp(14px, 2vw, 20px);
+      font-style: italic;
+      color: var(--white);
+      font-family: 'Georgia', serif;
+      letter-spacing: 0.01em;
+      margin-bottom: 8px;
+    }
+    .full-cite {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--pink);
+    }
+    .full-cite.amber { color: var(--amber); }
+
+    /* Spacer between sections */
+    .scroll-spacer { height: 8px; }
+
+    /* ══════════════════════════════
+       PART 2 — PAGE MAP (子頁面)
+       ══════════════════════════════ */
+    .page-map {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2px;
+      margin-bottom: 100px;
+    }
+    .page-node {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+      position: relative;
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .page-node:hover {
+      background: var(--card2);
+      border-color: var(--pink-line);
+      transform: translateY(-2px);
+    }
+    .page-node.amber:hover { border-color: rgba(200,137,74,0.4); }
+    .page-node.teal:hover  { border-color: rgba(74,140,140,0.4); }
+    .page-node.system:hover { border-color: rgba(122,106,255,0.4); }
+
+    .node-url {
+      font-family: 'Inter', monospace;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--grey);
+      margin-bottom: 14px;
+    }
+    .node-url span { color: var(--pink); }
+    .node-url .amber { color: var(--amber); }
+    .node-url .teal  { color: var(--teal); }
+    .node-url .sys   { color: #7a6aff; }
+
+    .node-title {
+      font-size: 16px; font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .node-desc {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey); line-height: 1.75;
+      font-family: 'Noto Sans TC', sans-serif;
+      margin-bottom: 16px;
+    }
+    .node-features { list-style: none; }
+    .node-features li {
+      font-size: 10px; font-weight: 400;
+      color: var(--grey); line-height: 1.9;
+      padding-left: 14px;
+      position: relative;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .node-features li::before {
+      content: '→';
+      position: absolute; left: 0;
+      color: var(--pink); font-size: 9px;
+    }
+    .node-features li.amber::before { color: var(--amber); }
+    .node-features li.teal::before  { color: var(--teal); }
+    .node-features li.sys::before   { color: #7a6aff; }
+
+    .node-status {
+      position: absolute;
+      top: 16px; right: 16px;
+      font-size: 7px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 3px 8px;
+    }
+
+    /* ══════════════════════════════
+       PART 3 — ORDER FLOW
+       ══════════════════════════════ */
+    .flow-track {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      margin-bottom: 100px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
+    .flow-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px 20px;
+      width: 180px;
+      flex-shrink: 0;
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .flow-card:hover {
+      border-color: var(--amber);
+      background: var(--card2);
+    }
+    .flow-num {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--amber); margin-bottom: 10px;
+    }
+    .flow-icon {
+      font-size: 24px; margin-bottom: 10px;
+      display: block;
+    }
+    .flow-title {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px; line-height: 1.3;
+    }
+    .flow-desc {
+      font-size: 10px; font-weight: 300;
+      color: var(--grey); line-height: 1.7;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .flow-arrow {
+      display: flex; align-items: center;
+      padding: 0 12px;
+      align-self: center;
+      flex-shrink: 0;
+    }
+    .flow-arrow svg {
+      opacity: 0.25;
+    }
+
+    /* ══════════════════════════════
+       PART 4 — TECH STACK
+       ══════════════════════════════ */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 2px;
+      margin-bottom: 100px;
+    }
+    .tech-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px 20px;
+      transition: all 0.3s;
+    }
+    .tech-card:hover {
+      background: var(--card2);
+      border-color: var(--border);
+      transform: translateY(-2px);
+    }
+    .tech-layer {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 10px;
+    }
+    .tech-name {
+      font-size: 18px; font-weight: 900;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .tech-sub {
+      font-size: 10px; font-weight: 300;
+      color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .tech-cost {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .cost-free { color: var(--teal); }
+    .cost-paid { color: var(--amber); }
+    .cost-pct  { color: var(--pink); }
+
+    /* ══════════════════════════════
+       PHASE TIMELINE
+       ══════════════════════════════ */
+    .phase-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-bottom: 80px;
+    }
+    .phase-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .phase-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .phase-1::before { background: var(--pink); }
+    .phase-2::before { background: var(--amber); }
+    .phase-3::before { background: var(--teal); }
+
+    .phase-num {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 8px;
+    }
+    .phase-title {
+      font-size: 20px; font-weight: 900;
+      letter-spacing: -0.03em; margin-bottom: 6px;
+    }
+    .phase-1 .phase-title { color: var(--pink); }
+    .phase-2 .phase-title { color: var(--amber); }
+    .phase-3 .phase-title { color: var(--teal); }
+
+    .phase-time {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 20px;
+    }
+    .phase-list { list-style: none; }
+    .phase-list li {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey); line-height: 1.9;
+      padding-left: 14px; position: relative;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .phase-list li::before {
+      content: '—';
+      position: absolute; left: 0;
+      font-size: 9px; top: 3px;
+    }
+    .phase-1 .phase-list li::before { color: var(--pink); }
+    .phase-2 .phase-list li::before { color: var(--amber); }
+    .phase-3 .phase-list li::before { color: var(--teal); }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      padding: 40px 60px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .footer-brand {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink);
+    }
+    .footer-note {
+      font-size: 10px; font-weight: 300;
+      color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .page-header { padding: 40px 24px 28px; flex-direction: column; align-items: flex-start; }
+      .legend { padding: 20px 24px; }
+      main { padding: 40px 24px; }
+      .scroll-map::before { left: 24px; }
+      .scroll-section { grid-template-columns: 1fr; }
+      .scroll-section > :nth-child(2),
+      .scroll-section > :nth-child(3) { display: none; }
+      .phase-row { grid-template-columns: 1fr; }
+      .flow-track { flex-direction: column; }
+      .flow-arrow { transform: rotate(90deg); padding: 8px 0; }
+      .page-footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ PAGE HEADER ══ -->
+<header class="page-header">
+  <div class="page-header-left">
+    <p class="doc-label">Site Architecture · 網站架構規劃</p>
+    <h1 class="page-title">KASS<br /><span>Website</span> Blueprint</h1>
+    <p class="page-subtitle">
+      形象網站 + 預購系統的完整架構規劃。<br />
+      從品牌故事到結帳付款，每一個環節的設計邏輯。
+    </p>
+  </div>
+  <div class="page-header-right">
+    <strong>Version 1.0</strong>
+    文件日期 · 2026<br />
+    狀態 · Prototype 階段<br />
+    下一步 · 正式版開發
+  </div>
+</header>
+
+<!-- ══ LEGEND ══ -->
+<div class="legend">
+  <span class="legend-title">圖例</span>
+  <div class="legend-item"><div class="legend-dot dot-brand"></div>品牌形象</div>
+  <div class="legend-item"><div class="legend-dot dot-product"></div>商品 / 購物</div>
+  <div class="legend-item"><div class="legend-dot dot-culture"></div>文化內容</div>
+  <div class="legend-item"><div class="legend-dot dot-system"></div>系統功能</div>
+  <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
+    <span class="legend-tag tag-done">✓ Prototype 已有</span>
+    <span class="legend-tag tag-proto">◎ 待加入</span>
+    <span class="legend-tag tag-plan">○ 正式版規劃</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 1 — 單頁滾動地圖
+       ══════════════════════════════════════════════════════ -->
+  <p class="sec-label">01 · 首頁滾動結構 · Single Page Scroll</p>
+
+  <div class="scroll-map">
+
+    <!-- HERO -->
+    <div class="scroll-section">
+      <div class="connector">
+        <div class="scroll-card">
+          <p class="card-num">Section 00</p>
+          <h3 class="card-title">Hero — 開場</h3>
+          <p class="card-desc">全螢幕黑底。KASS Logo 緩入。<br />品牌第一印象，情緒先行。</p>
+          <div class="card-tags">
+            <span class="card-tag tag-done">✓ 已完成</span>
+          </div>
+        </div>
+      </div>
+      <div class="spine-node"><div class="spine-dot"></div></div>
+      <div class="scroll-info">
+        <p class="info-label">包含元素</p>
+        <ul class="info-items">
+          <li>KASS Logo 動態淡入</li>
+          <li>王家衛電影開場幕布</li>
+          <li>粒子網 + 幾何光線</li>
+          <li>[ 探索品牌 ] [ 立即預購 ] 按鈕</li>
+        </ul>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- BRAND STORY -->
+    <div class="scroll-section">
+      <div class="scroll-info right-align">
+        <p class="info-label">包含元素</p>
+        <ul class="info-items" style="text-align:left; padding-left:0;">
+          <li>萬華根源故事文字</li>
+          <li>1931 家族老照片 Timeline</li>
+          <li>四個名字・兩個家族</li>
+          <li>統計數字動畫（1843/2026）</li>
+          <li>紫雲黃氏飄渺雲效果</li>
+        </ul>
+      </div>
+      <div class="spine-node"><div class="spine-dot"></div></div>
+      <div class="connector from-right">
+        <div class="scroll-card">
+          <p class="card-num">Section 01</p>
+          <h3 class="card-title">Brand Origin<br />品牌起源</h3>
+          <p class="card-desc">家族・根源・1843。<br />黃聚益家族在萬華的傳承故事。</p>
+          <div class="card-tags">
+            <span class="card-tag tag-done">✓ 已完成</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- QUOTE -->
+    <div class="scroll-section">
+      <div class="scroll-full" style="grid-column:1/-1; padding: 0 60px;">
+        <div class="full-card">
+          <p class="full-quote">"Happiness is only real when shared."</p>
+          <p class="full-cite">Into the Wild, 2007 — KASS 的存在理由</p>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- PRODUCTS -->
+    <div class="scroll-section">
+      <div class="connector amber">
+        <div class="scroll-card amber">
+          <p class="card-num amber">Section 02</p>
+          <h3 class="card-title">Products<br />商品選購</h3>
+          <p class="card-desc">蛋糕預購 + 禮盒預購。<br />尺寸・口味・包裝・取件時間一次選完。</p>
+          <div class="card-tags">
+            <span class="card-tag tag-proto">◎ 待加強</span>
+          </div>
+        </div>
+      </div>
+      <div class="spine-node"><div class="spine-dot amber"></div></div>
+      <div class="scroll-info">
+        <p class="info-label">商品類型</p>
+        <ul class="info-items">
+          <li class="amber">蛋糕 — 4 / 6 / 9 吋，10 種口味</li>
+          <li class="amber">可麗露禮盒</li>
+          <li class="amber">肉桂卷禮盒</li>
+          <li class="amber">包裝客製：4 種紙袋 × 盒子組合</li>
+        </ul>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- PACKAGING -->
+    <div class="scroll-section">
+      <div class="scroll-info right-align">
+        <p class="info-label">互動設計</p>
+        <ul class="info-items" style="text-align:left;">
+          <li class="amber">即時預覽包裝組合</li>
+          <li class="amber">紙袋顏色切換</li>
+          <li class="amber">盒子顏色切換</li>
+          <li class="amber">4 種組合視覺展示</li>
+        </ul>
+      </div>
+      <div class="spine-node"><div class="spine-dot amber"></div></div>
+      <div class="connector from-right amber">
+        <div class="scroll-card amber">
+          <p class="card-num amber">Section 02B</p>
+          <h3 class="card-title">Packaging<br />包裝客製化</h3>
+          <p class="card-desc">選你的紙袋顏色 × 盒子顏色。<br />每一個盒子，都是一封信。</p>
+          <div class="card-tags">
+            <span class="card-tag tag-proto">◎ 待加入</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- TODAY IN CULTURE -->
+    <div class="scroll-section">
+      <div class="connector teal">
+        <div class="scroll-card teal">
+          <p class="card-num teal">Section 03</p>
+          <h3 class="card-title">Today in Culture<br />歷史上的今天</h3>
+          <p class="card-desc">一部電影・一本書・一張專輯。<br />KASS 想分享給你的，不只是蛋糕。</p>
+          <div class="card-tags">
+            <span class="card-tag tag-proto">◎ 待加入</span>
+          </div>
+        </div>
+      </div>
+      <div class="spine-node"><div class="spine-dot teal"></div></div>
+      <div class="scroll-info">
+        <p class="info-label">內容策略</p>
+        <ul class="info-items">
+          <li class="teal">顯示今日日期</li>
+          <li class="teal">電影 / 書 / 專輯 各一則</li>
+          <li class="teal">KASS 品牌語氣短評</li>
+          <li class="teal">每日可手動或自動更新</li>
+        </ul>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- MEMBER / OCARD -->
+    <div class="scroll-section">
+      <div class="scroll-info right-align">
+        <p class="info-label">功能說明</p>
+        <ul class="info-items" style="text-align:left;">
+          <li>OCARD 會員綁定</li>
+          <li>消費積點自動累積</li>
+          <li>生日禮・專屬優惠通知</li>
+          <li>不需自建會員系統</li>
+        </ul>
+      </div>
+      <div class="spine-node"><div class="spine-dot purple"></div></div>
+      <div class="connector from-right purple">
+        <div class="scroll-card purple-card">
+          <p class="card-num purple">Section 04</p>
+          <h3 class="card-title">Membership<br />會員中心</h3>
+          <p class="card-desc">串接 OCARD 會員系統。<br />積點・優惠・生日禮一站搞定。</p>
+          <div class="card-tags">
+            <span class="card-tag tag-plan">○ 正式版</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-spacer"></div>
+
+    <!-- FOOTER SECTION -->
+    <div class="scroll-section">
+      <div class="connector dim">
+        <div class="scroll-card" style="border-color:rgba(255,255,255,0.04);">
+          <p class="card-num dim">Footer</p>
+          <h3 class="card-title" style="color:var(--grey);">Footer</h3>
+          <p class="card-desc">Logo・聯絡資訊・Instagram<br />自取地址・營業時間</p>
+          <div class="card-tags">
+            <span class="card-tag tag-done">✓ 已完成</span>
+          </div>
+        </div>
+      </div>
+      <div class="spine-node"><div class="spine-dot white"></div></div>
+      <div class="scroll-info"></div>
+    </div>
+
+  </div><!-- /scroll-map -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 2 — 子頁面架構
+       ══════════════════════════════════════════════════════ -->
+  <p class="sec-label">02 · 子頁面 · Page Structure</p>
+
+  <div class="page-map">
+
+    <div class="page-node">
+      <span class="node-status tag-done">✓ 已有</span>
+      <p class="node-url"><span>kass.tw</span> /</p>
+      <h3 class="node-title">首頁<br />Main Page</h3>
+      <p class="node-desc">品牌形象 + 所有區塊的入口</p>
+      <ul class="node-features">
+        <li>Hero / Origin / Products</li>
+        <li>Packaging / Culture / Footer</li>
+        <li>單頁滾動體驗</li>
+      </ul>
+    </div>
+
+    <div class="page-node amber">
+      <span class="node-status tag-proto">◎ 規劃中</span>
+      <p class="node-url"><span class="amber">kass.tw</span> /shop</p>
+      <h3 class="node-title">商品選購<br />Shop</h3>
+      <p class="node-desc">完整的選購 + 客製化流程</p>
+      <ul class="node-features">
+        <li class="amber">商品類別切換</li>
+        <li class="amber">尺寸 / 口味選擇</li>
+        <li class="amber">包裝客製化</li>
+        <li class="amber">取件日期 / 時段</li>
+        <li class="amber">加入購物車</li>
+      </ul>
+    </div>
+
+    <div class="page-node amber">
+      <span class="node-status tag-proto">◎ 規劃中</span>
+      <p class="node-url"><span class="amber">kass.tw</span> /checkout</p>
+      <h3 class="node-title">結帳付款<br />Checkout</h3>
+      <p class="node-desc">訂單確認 → 付款 → 完成</p>
+      <ul class="node-features">
+        <li class="amber">訂單明細確認</li>
+        <li class="amber">填寫聯絡資訊</li>
+        <li class="amber">Stripe 付款（跳轉）</li>
+        <li class="amber">付款成功確認頁</li>
+      </ul>
+    </div>
+
+    <div class="page-node teal">
+      <span class="node-status tag-proto">◎ 規劃中</span>
+      <p class="node-url"><span class="teal">kass.tw</span> /today</p>
+      <h3 class="node-title">歷史上的今天<br />Today</h3>
+      <p class="node-desc">電影・書・專輯的文化分享</p>
+      <ul class="node-features">
+        <li class="teal">今日精選一則</li>
+        <li class="teal">KASS 短評</li>
+        <li class="teal">過往紀錄瀏覽</li>
+        <li class="teal">分享到 Instagram</li>
+      </ul>
+    </div>
+
+    <div class="page-node" style="border-color:rgba(122,106,255,0.2);">
+      <span class="node-status tag-plan">○ 正式版</span>
+      <p class="node-url"><span style="color:#7a6aff;">ocard.co</span> / KASS</p>
+      <h3 class="node-title">會員中心<br />OCARD</h3>
+      <p class="node-desc">跳轉至 OCARD 會員系統</p>
+      <ul class="node-features">
+        <li class="sys">點數查詢 / 兌換</li>
+        <li class="sys">消費記錄</li>
+        <li class="sys">專屬優惠</li>
+        <li class="sys">生日禮通知</li>
+      </ul>
+    </div>
+
+    <div class="page-node" style="border-color:rgba(255,255,255,0.04);">
+      <span class="node-status tag-plan">○ 正式版</span>
+      <p class="node-url" style="color:rgba(255,255,255,0.2);">kass.tw /admin</p>
+      <h3 class="node-title" style="color:var(--grey);">後台管理<br />Admin</h3>
+      <p class="node-desc" style="color:rgba(122,122,122,0.6);">店家內部使用，不對外開放</p>
+      <ul class="node-features">
+        <li>訂單列表 / 狀態管理</li>
+        <li>商品上下架</li>
+        <li>Today 內容更新</li>
+        <li>取件時段設定</li>
+      </ul>
+    </div>
+
+  </div><!-- /page-map -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 3 — 訂購流程
+       ══════════════════════════════════════════════════════ -->
+  <p class="sec-label">03 · 客人訂購流程 · Order Flow</p>
+
+  <div class="flow-track">
+
+    <div class="flow-step">
+      <div class="flow-card">
+        <span class="flow-icon">👀</span>
+        <p class="flow-num">Step 01</p>
+        <h4 class="flow-title">瀏覽品牌</h4>
+        <p class="flow-desc">看故事、感受品牌、建立信任感</p>
+      </div>
+    </div>
+    <div class="flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+        <path d="M0 6H18M13 1L18 6L13 11" stroke="#C8894A" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-card">
+        <span class="flow-icon">🎂</span>
+        <p class="flow-num">Step 02</p>
+        <h4 class="flow-title">選擇商品</h4>
+        <p class="flow-desc">蛋糕尺寸 + 口味<br />或禮盒種類</p>
+      </div>
+    </div>
+    <div class="flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+        <path d="M0 6H18M13 1L18 6L13 11" stroke="#C8894A" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-card">
+        <span class="flow-icon">🎁</span>
+        <p class="flow-num">Step 03</p>
+        <h4 class="flow-title">客製包裝</h4>
+        <p class="flow-desc">選紙袋顏色<br />選盒子顏色<br />即時預覽</p>
+      </div>
+    </div>
+    <div class="flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+        <path d="M0 6H18M13 1L18 6L13 11" stroke="#C8894A" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-card">
+        <span class="flow-icon">📅</span>
+        <p class="flow-num">Step 04</p>
+        <h4 class="flow-title">選取件時間</h4>
+        <p class="flow-desc">選日期 + 時段<br />自取（西門町）</p>
+      </div>
+    </div>
+    <div class="flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+        <path d="M0 6H18M13 1L18 6L13 11" stroke="#C8894A" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-card">
+        <span class="flow-icon">💳</span>
+        <p class="flow-num">Step 05</p>
+        <h4 class="flow-title">付款</h4>
+        <p class="flow-desc">Stripe 信用卡<br />安全加密<br />一頁完成</p>
+      </div>
+    </div>
+    <div class="flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+        <path d="M0 6H18M13 1L18 6L13 11" stroke="#C8894A" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-card">
+        <span class="flow-icon">✉️</span>
+        <p class="flow-num">Step 06</p>
+        <h4 class="flow-title">確認通知</h4>
+        <p class="flow-desc">客人收到訂單編號<br />店家收到通知</p>
+      </div>
+    </div>
+    <div class="flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+        <path d="M0 6H18M13 1L18 6L13 11" stroke="#C8894A" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-card" style="border-color:rgba(221,149,180,0.3);">
+        <span class="flow-icon">🛍️</span>
+        <p class="flow-num" style="color:var(--pink);">完成</p>
+        <h4 class="flow-title">自取</h4>
+        <p class="flow-desc">憑訂單編號<br />到店自取<br />OCARD 積點</p>
+      </div>
+    </div>
+
+  </div><!-- /flow-track -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 4 — 技術架構
+       ══════════════════════════════════════════════════════ -->
+  <p class="sec-label">04 · 技術選型 · Tech Stack</p>
+
+  <div class="tech-grid">
+
+    <div class="tech-card">
+      <p class="tech-layer">前端 · Frontend</p>
+      <h4 class="tech-name">HTML/CSS/JS</h4>
+      <p class="tech-sub">你現在的 KASS prototype，繼續延伸，不需要重做。</p>
+      <p class="tech-cost cost-free">免費</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">部署 · Hosting</p>
+      <h4 class="tech-name">Vercel</h4>
+      <p class="tech-sub">靜態網站免費部署，自訂網域，全球 CDN 加速。</p>
+      <p class="tech-cost cost-free">免費方案夠用</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">後端 API · Backend</p>
+      <h4 class="tech-name">Vercel<br/>Functions</h4>
+      <p class="tech-sub">小型 Node.js API。處理訂單建立、Stripe 串接、Webhook。</p>
+      <p class="tech-cost cost-free">免費方案夠用</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">金流 · Payment</p>
+      <h4 class="tech-name">Stripe</h4>
+      <p class="tech-sub">信用卡付款，安全加密。Checkout 頁面可放 KASS Logo。</p>
+      <p class="tech-cost cost-pct">2.9% + NT$9 / 筆</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">資料庫 · Database</p>
+      <h4 class="tech-name">Supabase</h4>
+      <p class="tech-sub">儲存訂單、商品資料、Today 內容。有管理介面可直接操作。</p>
+      <p class="tech-cost cost-free">免費方案夠用</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">會員系統 · CRM</p>
+      <h4 class="tech-name">OCARD</h4>
+      <p class="tech-sub">台灣餐飲主流會員系統，積點/優惠/生日禮，不需自建。</p>
+      <p class="tech-cost cost-paid">月費制（洽詢）</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">通知 · Notification</p>
+      <h4 class="tech-name">Email /<br/>Resend</h4>
+      <p class="tech-sub">訂單成立自動寄確認信給客人，同時通知店家。</p>
+      <p class="tech-cost cost-free">免費方案夠用</p>
+    </div>
+
+    <div class="tech-card">
+      <p class="tech-layer">網域 · Domain</p>
+      <h4 class="tech-name">kass.tw</h4>
+      <p class="tech-sub">建議盡早申請，避免被搶注。台灣 .tw 網域約 NT$400/年。</p>
+      <p class="tech-cost cost-paid">NT$400 / 年</p>
+    </div>
+
+  </div><!-- /tech-grid -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 5 — 開發階段規劃
+       ══════════════════════════════════════════════════════ -->
+  <p class="sec-label">05 · 開發階段 · Roadmap</p>
+
+  <div class="phase-row">
+
+    <div class="phase-card phase-1">
+      <p class="phase-num">Phase 1</p>
+      <h3 class="phase-title">Prototype</h3>
+      <p class="phase-time">現在進行中</p>
+      <ul class="phase-list">
+        <li>品牌形象頁面 ✓</li>
+        <li>家族起源區塊 ✓</li>
+        <li>產品燈箱展示 ✓</li>
+        <li>包裝客製化 UI</li>
+        <li>Today 文化區塊</li>
+        <li>訂購表單 UI 設計</li>
+      </ul>
+    </div>
+
+    <div class="phase-card phase-2">
+      <p class="phase-num">Phase 2</p>
+      <h3 class="phase-title">MVP</h3>
+      <p class="phase-time">Prototype 確認後 · 約 4–6 週</p>
+      <ul class="phase-list">
+        <li>申請 kass.tw 網域</li>
+        <li>Vercel 正式部署</li>
+        <li>Stripe 串接 + 付款流程</li>
+        <li>訂單資料庫（Supabase）</li>
+        <li>Email 確認通知</li>
+        <li>後台訂單管理頁</li>
+      </ul>
+    </div>
+
+    <div class="phase-card phase-3">
+      <p class="phase-num">Phase 3</p>
+      <h3 class="phase-title">Full Launch</h3>
+      <p class="phase-time">MVP 穩定後 · 持續優化</p>
+      <ul class="phase-list">
+        <li>OCARD 會員系統串接</li>
+        <li>Today 內容管理後台</li>
+        <li>多語系（繁中 / EN）</li>
+        <li>SEO + Open Graph</li>
+        <li>Instagram 自動同步</li>
+        <li>禮盒訂閱制（選配）</li>
+      </ul>
+    </div>
+
+  </div><!-- /phase-row -->
+
+
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer class="page-footer">
+  <span class="footer-brand">KASS · Site Architecture Blueprint</span>
+  <span class="footer-note">此文件為規劃草稿，內容隨討論持續更新。Version 1.0 · 2026</span>
+</footer>
+
+</body>
+</html>

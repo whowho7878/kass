@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KASS — Order</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:    #DD95B4;
+      --black:   #0e0c09;
+      --dark:    #111009;
+      --card:    #161310;
+      --card2:   #1a1714;
+      --white:   #F5F0EB;
+      --grey:    #7a7470;
+      --amber:   #C8894A;
+      --border:  rgba(255,255,255,0.07);
+      --film:    #0c0a07;
+      --left-w:  52%;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      overflow-x: hidden;
+      height: 100svh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(14,12,9,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      height: 20px; filter: invert(1) brightness(0.85);
+    }
+    .nav-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .nav-back {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--white); }
+
+    /* ── MAIN 2-COLUMN LAYOUT ── */
+    .page-body {
+      display: flex;
+      margin-top: 56px;
+      height: calc(100svh - 56px);
+      overflow: hidden;
+    }
+
+    /* LEFT — product menu (scrollable) */
+    .col-left {
+      width: var(--left-w);
+      flex-shrink: 0;
+      overflow-y: auto;
+      background: var(--dark);
+      border-right: 1px solid var(--border);
+      padding: 0 0 120px 0;
+    }
+    .col-left::-webkit-scrollbar { width: 4px; }
+    .col-left::-webkit-scrollbar-track { background: transparent; }
+    .col-left::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+    /* RIGHT — order summary + checkout (fixed, scroll inside) */
+    .col-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--black);
+    }
+
+    /* ── LEFT: SECTION HEADERS ── */
+    .menu-section-header {
+      padding: 32px 32px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+      background: var(--dark);
+    }
+    .menu-section-eyebrow {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 6px;
+    }
+    .menu-section-eyebrow.amber { color: var(--amber); }
+    .menu-section-title {
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: 900; letter-spacing: -0.03em;
+      line-height: 0.95;
+      color: var(--white);
+    }
+    .menu-section-title span { color: var(--pink); }
+    .menu-section-title span.a { color: var(--amber); }
+    .menu-section-sub {
+      margin-top: 6px;
+      font-size: 10px; font-weight: 300;
+      color: var(--grey); letter-spacing: 0.5px;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    /* ── LEFT: DATE / TIME STRIP ── */
+    .datetime-strip {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .dt-tab {
+      flex: 1;
+      padding: 18px 20px;
+      cursor: pointer;
+      border-right: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .dt-tab:last-child { border-right: none; }
+    .dt-tab:hover { background: rgba(255,255,255,0.03); }
+    .dt-tab.open { background: rgba(255,255,255,0.04); }
+    .dt-tab-label {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 4px;
+    }
+    .dt-tab-val {
+      font-size: 13px; font-weight: 700;
+      color: var(--white); letter-spacing: -0.01em;
+    }
+    .dt-tab-val.placeholder { color: var(--grey); font-weight: 400; font-size: 11px; }
+
+    /* DateTime dropdown panel */
+    .datetime-panel {
+      display: none;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px 28px;
+    }
+    .datetime-panel.open { display: flex; gap: 32px; }
+
+    /* Calendar */
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-nav button {
+      background: none; border: 1px solid var(--border);
+      color: var(--grey); padding: 4px 12px;
+      cursor: pointer; font-size: 13px;
+      transition: all 0.2s;
+    }
+    .cal-nav button:hover { border-color: var(--white); color: var(--white); }
+    .cal-month {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--white);
+    }
+    .cal-grid-header {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 6px;
+    }
+    .cal-grid-header span {
+      text-align: center; font-size: 9px;
+      font-weight: 700; letter-spacing: 1px;
+      color: var(--grey); padding: 4px 0;
+    }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 500;
+      cursor: pointer; border-radius: 2px;
+      transition: all 0.15s;
+      color: var(--white);
+    }
+    .cal-day:hover { background: rgba(255,255,255,0.08); }
+    .cal-day.today { color: var(--amber); font-weight: 700; }
+    .cal-day.selected {
+      background: var(--pink); color: var(--black); font-weight: 700;
+    }
+    .cal-day.disabled { color: rgba(255,255,255,0.15); cursor: default; pointer-events: none; }
+    .cal-day.empty { pointer-events: none; }
+
+    /* Time slots */
+    .dt-time-section { flex: 1; min-width: 160px; }
+    .dt-section-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 10px;
+    }
+    .time-slot-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+    }
+    .time-slot {
+      padding: 10px 8px; text-align: center;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+    .time-slot:hover { border-color: rgba(255,255,255,0.3); color: var(--white); }
+    .time-slot.selected {
+      background: var(--pink); border-color: var(--pink);
+      color: var(--black); font-weight: 700;
+    }
+
+    /* ── LEFT: PRODUCT CARDS ── */
+    .menu-group {
+      padding: 0;
+    }
+    .menu-group-label {
+      padding: 20px 32px 10px;
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Cake card: 2:3 portrait poster + qty controls */
+    .cake-card {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+      cursor: default;
+    }
+    .cake-card:hover { background: rgba(255,255,255,0.02); }
+
+    /* Portrait poster image — 2:3 */
+    .cake-poster {
+      width: 90px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+    .cake-poster::before {
+      content: '';
+      display: block;
+      padding-bottom: 150%; /* 2:3 */
+    }
+    .cake-poster img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center 65%;
+      filter: brightness(0.88) contrast(1.05);
+      transition: filter 0.3s;
+    }
+    .cake-card:hover .cake-poster img { filter: brightness(1) contrast(1.06); }
+
+    /* Size selector overlay on poster */
+    .cake-size-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      display: flex;
+    }
+    .size-pip {
+      flex: 1; padding: 5px 2px;
+      text-align: center;
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 0;
+      background: rgba(14,12,9,0.85);
+      color: var(--grey);
+      cursor: pointer;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-right: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.15s;
+    }
+    .size-pip:last-child { border-right: none; }
+    .size-pip:hover { background: rgba(14,12,9,0.95); color: var(--white); }
+    .size-pip.active {
+      background: var(--pink); color: var(--black);
+    }
+
+    /* Card info + controls */
+    .cake-info {
+      flex: 1;
+      padding: 14px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cake-the {
+      font-size: 7px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 2px;
+    }
+    .cake-name {
+      font-size: 14px; font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white); line-height: 1.1;
+      margin-bottom: 2px;
+    }
+    .cake-zh {
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 10px; font-weight: 300;
+      color: var(--grey); margin-bottom: 6px;
+    }
+    .cake-desc {
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 9px; font-weight: 300;
+      color: rgba(255,255,255,0.3);
+      line-height: 1.6; margin-bottom: 10px;
+    }
+    .cake-price-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .cake-price {
+      font-family: 'Inter', monospace;
+      font-size: 12px; font-weight: 700;
+      color: var(--white);
+    }
+    .cake-price .price-size {
+      font-size: 9px; font-weight: 400;
+      color: var(--grey); margin-right: 4px;
+    }
+
+    /* ── QTY CONTROLS (kiosk style) ── */
+    .qty-controls {
+      display: flex; align-items: center; gap: 0;
+    }
+    .qty-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--grey);
+      font-size: 16px; font-weight: 300;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1;
+      user-select: none;
+    }
+    .qty-btn:hover { border-color: var(--white); color: var(--white); background: rgba(255,255,255,0.05); }
+    .qty-btn.minus:hover { border-color: rgba(221,149,180,0.6); color: var(--pink); }
+    .qty-btn.plus {
+      border-color: rgba(221,149,180,0.3);
+      color: var(--pink);
+    }
+    .qty-btn.plus:hover { background: var(--pink); color: var(--black); border-color: var(--pink); }
+    .qty-num {
+      width: 36px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
+      color: var(--white);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .qty-num.active { color: var(--pink); }
+
+    /* Gift box card (horizontal, simpler) */
+    .gift-card {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .gift-card:hover { background: rgba(200,137,74,0.03); }
+    .gift-poster {
+      width: 90px; flex-shrink: 0;
+      position: relative; overflow: hidden;
+      background: #0a0a0a;
+    }
+    .gift-poster::before { content:''; display:block; padding-bottom:100%; }
+    .gift-poster img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+      filter: brightness(0.85) contrast(1.05);
+      transition: filter 0.3s;
+    }
+    .gift-card:hover .gift-poster img { filter: brightness(0.98); }
+    .gift-info {
+      flex: 1; padding: 14px 16px 12px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .gift-the { font-size: 7px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--amber); margin-bottom: 2px; }
+    .gift-name { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; color: var(--white); margin-bottom: 2px; }
+    .gift-zh { font-family: 'Noto Sans TC', sans-serif; font-size: 10px; font-weight: 300; color: var(--grey); margin-bottom: 4px; }
+    .gift-spec { font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; opacity: 0.6; }
+    .gift-desc { font-family: 'Noto Sans TC', sans-serif; font-size: 9px; font-weight: 300; color: rgba(255,255,255,0.3); line-height: 1.6; margin-bottom: 10px; }
+    .gift-price-row { display: flex; align-items: center; justify-content: space-between; }
+    .gift-price { font-family: 'Inter', monospace; font-size: 12px; font-weight: 700; color: var(--amber); }
+    .gift-qty .qty-btn.plus { border-color: rgba(200,137,74,0.4); color: var(--amber); }
+    .gift-qty .qty-btn.plus:hover { background: var(--amber); color: var(--black); border-color: var(--amber); }
+    .gift-qty .qty-num.active { color: var(--amber); }
+
+    /* ── RIGHT COLUMN: ORDER SUMMARY ── */
+    .order-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--black);
+      flex-shrink: 0;
+    }
+    .order-header-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .order-label {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .order-item-count {
+      font-size: 10px; font-weight: 600;
+      color: var(--pink); letter-spacing: 1px;
+    }
+    .order-title {
+      font-size: 18px; font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    /* Order items list */
+    .order-items {
+      flex: 1; overflow-y: auto;
+      padding: 0;
+    }
+    .order-items::-webkit-scrollbar { width: 3px; }
+    .order-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+
+    .order-empty {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; gap: 12px;
+      color: rgba(255,255,255,0.15);
+      padding: 40px 24px;
+    }
+    .order-empty-icon {
+      font-size: 32px; opacity: 0.3;
+    }
+    .order-empty-text {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      text-align: center;
+    }
+    .order-empty-sub {
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 11px; font-weight: 300;
+      color: rgba(255,255,255,0.12);
+      text-align: center; line-height: 1.8;
+    }
+
+    .order-item {
+      display: flex; align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 12px;
+      transition: background 0.15s;
+    }
+    .order-item:hover { background: rgba(255,255,255,0.02); }
+    .oi-img {
+      width: 36px; height: 36px;
+      object-fit: cover; object-position: center 60%;
+      flex-shrink: 0;
+      filter: brightness(0.85);
+    }
+    .oi-info { flex: 1; min-width: 0; }
+    .oi-name {
+      font-size: 11px; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--white);
+    }
+    .oi-meta {
+      font-size: 9px; color: var(--grey);
+      letter-spacing: 0.5px; margin-top: 1px;
+    }
+    .oi-right { text-align: right; flex-shrink: 0; }
+    .oi-price {
+      font-size: 12px; font-weight: 700;
+      font-family: 'Inter', monospace;
+      color: var(--white);
+    }
+    .oi-remove {
+      font-size: 9px; color: rgba(255,255,255,0.2);
+      cursor: pointer; margin-top: 2px;
+      letter-spacing: 1px;
+      background: none; border: none;
+      transition: color 0.15s;
+    }
+    .oi-remove:hover { color: var(--pink); }
+
+    /* Spend progress bar */
+    .spend-progress {
+      padding: 10px 20px 0;
+      flex-shrink: 0;
+    }
+    .spend-track {
+      height: 2px; background: rgba(255,255,255,0.06);
+      position: relative; border-radius: 1px;
+    }
+    .spend-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--amber));
+      border-radius: 1px;
+      transition: width 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+      width: 0%;
+    }
+    .spend-label {
+      display: flex; justify-content: space-between;
+      margin-top: 5px;
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .spend-msg { color: var(--grey); }
+    .spend-goal { color: var(--amber); }
+
+    /* Divider */
+    .order-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 20px;
+    }
+
+    /* Total + checkout section */
+    .order-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--black);
+    }
+    .total-row {
+      display: flex; justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .total-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .total-amount {
+      font-size: 22px; font-weight: 900;
+      letter-spacing: -0.03em;
+      font-family: 'Inter', monospace;
+      color: var(--white);
+    }
+    .total-amount .currency {
+      font-size: 11px; font-weight: 400;
+      color: var(--grey); margin-right: 4px;
+    }
+
+    /* Checkout form — collapsed by default, expands on click */
+    .checkout-form {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      margin-top: 14px;
+      padding-top: 16px;
+    }
+    .checkout-form.open { display: flex; }
+
+    .co-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .co-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .co-label {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .co-input {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 400;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .co-input:focus { border-color: rgba(221,149,180,0.5); }
+    .co-input::placeholder { color: rgba(255,255,255,0.2); }
+    textarea.co-input { resize: vertical; min-height: 56px; font-size: 12px; }
+
+    /* Delivery toggle */
+    .delivery-toggle {
+      display: flex;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    .dv-opt {
+      flex: 1; padding: 10px 8px;
+      text-align: center;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); cursor: pointer;
+      border-right: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .dv-opt:last-child { border-right: none; }
+    .dv-opt.active { background: var(--card2); color: var(--white); }
+    .dv-opt.amber.active { color: var(--amber); }
+
+    .co-delivery-addr {
+      display: none;
+      background: rgba(200,137,74,0.04);
+      border: 1px solid rgba(200,137,74,0.15);
+      padding: 12px; margin-bottom: 8px;
+    }
+    .co-delivery-addr.show { display: block; }
+    .co-delivery-addr .co-label { color: var(--amber); margin-bottom: 8px; display:block; }
+
+    /* CTA buttons */
+    .btn-checkout {
+      width: 100%; padding: 14px;
+      background: var(--pink); color: var(--black);
+      border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .btn-checkout:hover { background: #e8a8c6; }
+    .btn-checkout:disabled { background: rgba(255,255,255,0.08); color: var(--grey); cursor: not-allowed; }
+
+    .btn-open-form {
+      width: 100%; padding: 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--grey); cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .btn-open-form:hover { border-color: var(--pink); color: var(--pink); }
+    .btn-open-form.hidden { display: none; }
+
+    /* TapPay card fields */
+    .tp-fields {
+      display: none; flex-direction: column; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .tp-fields.show { display: flex; }
+    .tp-field-label {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 4px;
+    }
+    .tp-field-wrap {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      padding: 10px 12px; min-height: 40px;
+      transition: border-color 0.2s;
+    }
+    .tp-field-wrap.focus { border-color: rgba(221,149,180,0.5); }
+    .tp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tp-test-hint {
+      font-size: 9px; color: rgba(255,255,255,0.25);
+      letter-spacing: 0.5px; line-height: 1.8;
+      padding: 6px 0;
+    }
+
+    /* Datetime display in order footer */
+    .order-timing {
+      display: flex; align-items: center;
+      gap: 8px; margin-bottom: 10px;
+      padding: 8px 12px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+    }
+    .order-timing-icon { font-size: 12px; opacity: 0.5; }
+    .order-timing-text {
+      font-size: 10px; font-weight: 600;
+      color: var(--white); letter-spacing: 0.5px;
+    }
+    .order-timing-text.warn { color: var(--amber); }
+    .order-timing-edit {
+      margin-left: auto; font-size: 8px;
+      color: var(--grey); cursor: pointer;
+      letter-spacing: 1px; text-transform: uppercase;
+      text-decoration: underline;
+    }
+    .order-timing-edit:hover { color: var(--white); }
+
+    /* ── SUCCESS SCREEN ── */
+    .success-screen {
+      display: none;
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--black);
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 32px; text-align: center;
+    }
+    .success-screen.show { display: flex; }
+    .success-logo { height: 40px; filter: invert(1) brightness(0.85); margin-bottom: 32px; }
+    .success-num {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 12px;
+    }
+    .success-title {
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 900; line-height: 0.9;
+      letter-spacing: -0.04em; margin-bottom: 16px;
+    }
+    .success-title em { color: var(--pink); font-style: normal; }
+    .success-quote {
+      font-family: 'Playfair Display', serif;
+      font-style: italic; font-size: 15px;
+      color: rgba(255,255,255,0.4); max-width: 400px;
+      line-height: 1.7; margin-bottom: 36px;
+    }
+    .success-details {
+      width: 100%; max-width: 420px;
+      border: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .success-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+    .success-row:last-child { border-bottom: none; }
+    .success-row .sk { color: var(--grey); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+    .success-row .sv { font-weight: 600; }
+    .btn-back {
+      padding: 12px 40px;
+      border: 1px solid var(--border); color: var(--grey);
+      background: transparent;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: all 0.2s;
+    }
+    .btn-back:hover { border-color: var(--white); color: var(--white); }
+
+    /* TapPay overlay */
+    .tp-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 998;
+      background: rgba(14,12,9,0.95);
+      flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+    }
+    .tp-overlay.show { display: flex; }
+    .tp-spinner {
+      width: 40px; height: 40px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--pink);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .tp-overlay-text {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--white);
+    }
+    .tp-overlay-sub {
+      font-size: 9px; color: var(--grey); letter-spacing: 2px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      :root { --left-w: 100%; }
+      .page-body { flex-direction: column; overflow-y: auto; height: auto; }
+      .col-left { width: 100%; overflow-y: visible; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+      .col-right {
+        width: 100%; height: auto; overflow: visible;
+        border-top: 2px solid var(--border);
+      }
+      .order-items { overflow: visible; max-height: none; }
+      .menu-section-header { position: relative; }
+      .datetime-panel.open { flex-direction: column; }
+      body { height: auto; overflow-y: auto; }
+    }
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .menu-section-header { padding: 24px 20px 14px; }
+      .menu-group-label { padding: 14px 20px 8px; }
+      .cake-card, .gift-card { min-height: unset; }
+      .cake-poster, .gift-poster { width: 72px; }
+      .cake-info, .gift-info { padding: 10px 12px 10px; }
+      .order-footer { padding: 14px 16px; }
+      .co-row { grid-template-columns: 1fr; }
+      .datetime-panel.open { padding: 16px 20px; gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAV ── -->
+  <nav>
+    <a href="index.html" class="nav-back">← 首頁</a>
+    <span class="nav-title">Order · 訂購</span>
+    <img src="images/logo.png" alt="KASS" class="nav-logo" />
+  </nav>
+
+  <!-- ── MAIN 2-COLUMN ── -->
+  <div class="page-body">
+
+    <!-- ════════════════════════
+         LEFT — Menu
+    ════════════════════════ -->
+    <div class="col-left">
+
+      <!-- Section heading -->
+      <div class="menu-section-header">
+        <div class="menu-section-eyebrow">KASS · Ximending</div>
+        <h1 class="menu-section-title">Choose<br /><span>Your</span> Order.</h1>
+        <p class="menu-section-sub">選好品項與數量，填寫資料，完成訂購。</p>
+      </div>
+
+      <!-- Date / Time selector strip -->
+      <div class="datetime-strip" id="datetimeStrip">
+        <div class="dt-tab" id="dateTab" onclick="toggleDatetime('date')">
+          <div class="dt-tab-label">取件日期 · Date</div>
+          <div class="dt-tab-val placeholder" id="dateTabVal">點擊選擇</div>
+        </div>
+        <div class="dt-tab" id="timeTab" onclick="toggleDatetime('time')">
+          <div class="dt-tab-label">取件時段 · Time</div>
+          <div class="dt-tab-val placeholder" id="timeTabVal">點擊選擇</div>
+        </div>
+      </div>
+
+      <!-- DateTime panel -->
+      <div class="datetime-panel" id="datetimePanel">
+        <!-- Calendar -->
+        <div style="flex:1; min-width:220px;">
+          <div class="dt-section-label">日期 · Date</div>
+          <div class="cal-nav">
+            <button onclick="prevMonth()">←</button>
+            <span class="cal-month" id="calMonth"></span>
+            <button onclick="nextMonth()">→</button>
+          </div>
+          <div class="cal-grid-header">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <!-- Time slots -->
+        <div class="dt-time-section">
+          <div class="dt-section-label">時段 · Time Slot</div>
+          <div class="time-slot-grid">
+            <div class="time-slot" onclick="selectTime(this,'13:00')">13:00</div>
+            <div class="time-slot" onclick="selectTime(this,'14:00')">14:00</div>
+            <div class="time-slot" onclick="selectTime(this,'15:00')">15:00</div>
+            <div class="time-slot" onclick="selectTime(this,'16:00')">16:00</div>
+            <div class="time-slot" onclick="selectTime(this,'17:00')">17:00</div>
+            <div class="time-slot" onclick="selectTime(this,'18:00')">18:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAKE section -->
+      <div class="menu-group">
+        <div class="menu-group-label">The Cake · 選蛋糕</div>
+        <div id="cakeList"><!-- JS renders --></div>
+      </div>
+
+      <!-- GIFT BOX section -->
+      <div class="menu-group">
+        <div class="menu-group-label" style="border-top:1px solid var(--border);">The Gift Box · 禮盒</div>
+        <div id="giftList"><!-- JS renders --></div>
+      </div>
+
+    </div><!-- /col-left -->
+
+
+    <!-- ════════════════════════
+         RIGHT — Order Summary
+    ════════════════════════ -->
+    <div class="col-right">
+
+      <!-- Header -->
+      <div class="order-header">
+        <div class="order-header-top">
+          <span class="order-label">Your Order</span>
+          <span class="order-item-count" id="orderCount">0 件</span>
+        </div>
+        <div class="order-title">訂單明細</div>
+      </div>
+
+      <!-- Items list -->
+      <div class="order-items" id="orderItems">
+        <div class="order-empty" id="orderEmpty">
+          <div class="order-empty-icon">◻</div>
+          <div class="order-empty-text">Cart Empty</div>
+          <div class="order-empty-sub">在左側選擇品項<br />加入購物車後顯示於此</div>
+        </div>
+      </div>
+
+      <!-- Spend progress -->
+      <div class="spend-progress" id="spendProgress" style="display:none;">
+        <div class="spend-track">
+          <div class="spend-fill" id="spendFill"></div>
+        </div>
+        <div class="spend-label">
+          <span class="spend-msg" id="spendMsg">—</span>
+          <span class="spend-goal" id="spendGoal">—</span>
+        </div>
+      </div>
+
+      <!-- Footer: total + form -->
+      <div class="order-footer">
+
+        <!-- Timing display -->
+        <div class="order-timing" id="orderTiming">
+          <span class="order-timing-icon">📅</span>
+          <span class="order-timing-text warn" id="orderTimingText">請先選擇取件日期與時段</span>
+          <span class="order-timing-edit" onclick="focusDatetime()">選擇</span>
+        </div>
+
+        <!-- Total -->
+        <div class="total-row">
+          <span class="total-label">Total</span>
+          <span class="total-amount"><span class="currency">NT$</span><span id="totalAmt">0</span></span>
+        </div>
+
+        <!-- Open form button -->
+        <button class="btn-open-form" id="btnOpenForm" onclick="openCheckoutForm()" disabled>
+          填寫資料並結帳 →
+        </button>
+
+        <!-- Checkout form (collapsed) -->
+        <div class="checkout-form" id="checkoutForm">
+
+          <!-- Delivery method toggle -->
+          <div class="delivery-toggle" id="deliveryToggle">
+            <div class="dv-opt active" onclick="setDelivery('pickup')">🏪 自取</div>
+            <div class="dv-opt amber" onclick="setDelivery('delivery')">🚗 外送</div>
+          </div>
+
+          <!-- Delivery address block -->
+          <div class="co-delivery-addr" id="coDeliveryBlock">
+            <span class="co-label">外送地址 Delivery Address</span>
+            <div class="co-row">
+              <div class="co-field">
+                <label class="co-label">縣市</label>
+                <input class="co-input" id="addrCity" placeholder="台北市" />
+              </div>
+              <div class="co-field">
+                <label class="co-label">區域</label>
+                <input class="co-input" id="addrDist" placeholder="萬華區" />
+              </div>
+            </div>
+            <div class="co-field">
+              <label class="co-label">街道地址</label>
+              <input class="co-input" id="addrStreet" placeholder="西門町…" />
+            </div>
+          </div>
+
+          <!-- Contact info -->
+          <div class="co-row">
+            <div class="co-field">
+              <label class="co-label">姓名 Name</label>
+              <input class="co-input" id="coName" placeholder="Your name" autocomplete="name" />
+            </div>
+            <div class="co-field">
+              <label class="co-label">電話 Phone</label>
+              <input class="co-input" id="coPhone" placeholder="09xx-xxx-xxx" autocomplete="tel" />
+            </div>
+          </div>
+          <div class="co-field">
+            <label class="co-label">信箱 Email</label>
+            <input class="co-input" id="coEmail" placeholder="hello@kass.tw" autocomplete="email" />
+          </div>
+          <div class="co-field">
+            <label class="co-label">備注 Notes</label>
+            <textarea class="co-input" id="coNote" placeholder="特殊需求 / 過敏提醒 / 贈禮對象…"></textarea>
+          </div>
+
+          <!-- TapPay card fields -->
+          <div class="tp-fields show" id="tpFields">
+            <div>
+              <div class="tp-field-label">信用卡號 Card Number</div>
+              <div class="tp-field-wrap" id="tpNumber"></div>
+            </div>
+            <div class="tp-row">
+              <div>
+                <div class="tp-field-label">到期日 Expiry</div>
+                <div class="tp-field-wrap" id="tpExpiry"></div>
+              </div>
+              <div>
+                <div class="tp-field-label">安全碼 CVV</div>
+                <div class="tp-field-wrap" id="tpCcv"></div>
+              </div>
+            </div>
+            <div class="tp-test-hint">🔐 Sandbox 測試卡：4242 4242 4242 4242 · 01/27 · 123</div>
+          </div>
+
+          <!-- Submit -->
+          <button class="btn-checkout" id="btnSubmit" onclick="submitOrder()">
+            確認付款 →
+          </button>
+        </div>
+
+      </div>
+    </div><!-- /col-right -->
+
+  </div><!-- /page-body -->
+
+  <!-- ── SUCCESS SCREEN ── -->
+  <div class="success-screen" id="successScreen">
+    <img src="images/logo.png" alt="KASS" class="success-logo" />
+    <div class="success-num" id="successNum">ORDER # —</div>
+    <h2 class="success-title">Order<br /><em>Confirmed.</em></h2>
+    <p class="success-quote">"每一個細節，都是我們給你的承諾。"</p>
+    <div class="success-details" id="successDetails"></div>
+    <a href="order.html" class="btn-back">繼續選購</a>
+  </div>
+
+  <!-- ── TapPay Processing ── -->
+  <div class="tp-overlay" id="tpOverlay">
+    <div class="tp-spinner"></div>
+    <div class="tp-overlay-text">付款處理中</div>
+    <div class="tp-overlay-sub">請勿關閉視窗或重新整理</div>
+  </div>
+
+  <!-- TapPay SDK -->
+  <script src="https://js.tappaysdk.com/sdk/tpdirect/v5.18.0"></script>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════
+     PRODUCT DATA
+  ═══════════════════════════════════════════════════════ */
+  const CAKES = [
+    {
+      id: 'chestnut',
+      name: 'Chestnut Cake',
+      zh: '栗子蛋糕',
+      desc: '焦糖栗泥層疊，秋意漫延的每一口。',
+      img: 'images/product-chestnut-cake.jpg',
+      prices: { 4: 780, 6: 1080, 9: 1480 },
+      sizes: [4, 6, 9],
+      sizeLabel: { 4:'4吋 · 2–4人', 6:'6吋 · 6–8人', 9:'9吋 · 12–16人' }
+    },
+    {
+      id: 'strawberry',
+      name: 'Strawberry Cake',
+      zh: '草莓蛋糕',
+      desc: '鮮奶油與草莓的完美平衡，最直白的幸福。',
+      img: 'images/product-strawberry-cake.jpg',
+      prices: { 4: 780, 6: 1080, 9: 1480 },
+      sizes: [4, 6, 9],
+      sizeLabel: { 4:'4吋 · 2–4人', 6:'6吋 · 6–8人', 9:'9吋 · 12–16人' }
+    },
+    {
+      id: 'taro',
+      name: 'Taro Cake',
+      zh: '芋頭蛋糕',
+      desc: '芋泥層層堆疊，萬華的滋味，每一口都是暖。',
+      img: 'images/product-taro-cake.jpg',
+      prices: { 4: 780, 6: 1080, 9: 1480 },
+      sizes: [4, 6, 9],
+      sizeLabel: { 4:'4吋 · 2–4人', 6:'6吋 · 6–8人', 9:'9吋 · 12–16人' }
+    }
+  ];
+
+  const GIFTS = [
+    {
+      id: 'canele-box',
+      name: 'Canelé Box',
+      zh: '可麗露禮盒',
+      spec: '四入裝',
+      desc: '銅模現烤，法國波爾多的傳承。',
+      img: 'images/product-canele.jpg',
+      price: 320
+    },
+    {
+      id: 'cinnamon-box',
+      name: 'Cinnamon Roll Box',
+      zh: '肉桂捲禮盒',
+      spec: '三入裝',
+      desc: '手工整型，焦糖光澤釉面。',
+      img: 'images/product-cinnamon.jpg',
+      price: 500
+    }
+  ];
+
+  /* ═══════════════════════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════════════════════ */
+  // cart: array of { key, type, productId, name, zh, img, sizeLabel, price, qty }
+  // key = productId + '_' + size  (for cakes) or productId (for gifts)
+  let cart = JSON.parse(localStorage.getItem('kass_order_cart') || '[]');
+
+  // selectedSize: { [cakeId]: sizeNum }
+  let selectedSize = {};
+  CAKES.forEach(c => { selectedSize[c.id] = c.sizes[0]; }); // default = 4吋
+
+  let orderDate = '';
+  let orderTime = '';
+  let deliveryMethod = 'pickup';
+  let calYear, calMonth;
+  const today = new Date();
+  calYear  = today.getFullYear();
+  calMonth = today.getMonth();
+
+  function saveCart() {
+    localStorage.setItem('kass_order_cart', JSON.stringify(cart));
+  }
+
+  function cartTotal() {
+    return cart.reduce((s, i) => s + i.price * i.qty, 0);
+  }
+  function cartCount() {
+    return cart.reduce((s, i) => s + i.qty, 0);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     RENDER PRODUCT LISTS
+  ═══════════════════════════════════════════════════════ */
+  function renderProducts() {
+    // Cakes
+    const cakeList = document.getElementById('cakeList');
+    cakeList.innerHTML = CAKES.map(c => {
+      const sz = selectedSize[c.id] || c.sizes[0];
+      const price = c.prices[sz];
+      const cartItem = cart.find(i => i.productId === c.id && i.sizeNum === sz);
+      const qty = cartItem ? cartItem.qty : 0;
+
+      return `
+      <div class="cake-card" id="card_${c.id}">
+        <div class="cake-poster">
+          <img src="${c.img}" alt="${c.name}" />
+          <div class="cake-size-overlay">
+            ${c.sizes.map(s => `
+              <div class="size-pip ${s === sz ? 'active' : ''}"
+                   onclick="setSizeAndRender('${c.id}', ${s}); event.stopPropagation();">
+                ${s}"
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="cake-info">
+          <div>
+            <div class="cake-the">THE</div>
+            <div class="cake-name">${c.name}</div>
+            <div class="cake-zh">${c.zh}</div>
+            <div class="cake-desc">${c.desc}</div>
+          </div>
+          <div class="cake-price-row">
+            <div class="cake-price">
+              <span class="price-size">${c.sizeLabel[sz]}</span>
+              NT$ ${price.toLocaleString()}
+            </div>
+            <div class="qty-controls">
+              <button class="qty-btn minus"
+                      onclick="adjustQty('cake','${c.id}',${sz},-1)"
+                      ${qty === 0 ? 'disabled style="opacity:.3"' : ''}>−</button>
+              <div class="qty-num ${qty > 0 ? 'active' : ''}">${qty}</div>
+              <button class="qty-btn plus"
+                      onclick="adjustQty('cake','${c.id}',${sz},+1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Gifts
+    const giftList = document.getElementById('giftList');
+    giftList.innerHTML = GIFTS.map(g => {
+      const cartItem = cart.find(i => i.productId === g.id);
+      const qty = cartItem ? cartItem.qty : 0;
+
+      return `
+      <div class="gift-card" id="card_${g.id}">
+        <div class="gift-poster">
+          <img src="${g.img}" alt="${g.name}" />
+        </div>
+        <div class="gift-info">
+          <div>
+            <div class="gift-the">GIFT BOX</div>
+            <div class="gift-name">${g.name}</div>
+            <div class="gift-zh">${g.zh}</div>
+            <div class="gift-spec">${g.spec}</div>
+            <div class="gift-desc">${g.desc}</div>
+          </div>
+          <div class="gift-price-row">
+            <div class="gift-price">NT$ ${g.price.toLocaleString()}</div>
+            <div class="qty-controls gift-qty">
+              <button class="qty-btn minus"
+                      onclick="adjustQty('gift','${g.id}',null,-1)"
+                      ${qty === 0 ? 'disabled style="opacity:.3"' : ''}>−</button>
+              <div class="qty-num ${qty > 0 ? 'active' : ''}">${qty}</div>
+              <button class="qty-btn plus"
+                      onclick="adjustQty('gift','${g.id}',null,+1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     SIZE SELECTION
+  ═══════════════════════════════════════════════════════ */
+  function setSizeAndRender(cakeId, size) {
+    selectedSize[cakeId] = size;
+    renderProducts();
+    renderOrder();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     CART LOGIC — kiosk style
+  ═══════════════════════════════════════════════════════ */
+  function adjustQty(type, productId, sizeNum, delta) {
+    if (type === 'cake') {
+      const cake = CAKES.find(c => c.id === productId);
+      if (!cake) return;
+      const sz = sizeNum;
+      const key = productId + '_' + sz;
+      let item = cart.find(i => i.key === key);
+      if (!item) {
+        if (delta < 0) return;
+        item = {
+          key, type: 'cake', productId,
+          name: cake.name, zh: cake.zh,
+          img: cake.img,
+          sizeNum: sz,
+          sizeLabel: cake.sizeLabel[sz],
+          price: cake.prices[sz],
+          qty: 0
+        };
+        cart.push(item);
+      }
+      item.qty = Math.max(0, item.qty + delta);
+      if (item.qty === 0) cart = cart.filter(i => i.key !== key);
+    } else {
+      const gift = GIFTS.find(g => g.id === productId);
+      if (!gift) return;
+      const key = productId;
+      let item = cart.find(i => i.key === key);
+      if (!item) {
+        if (delta < 0) return;
+        item = {
+          key, type: 'gift', productId,
+          name: gift.name, zh: gift.zh,
+          spec: gift.spec, img: gift.img,
+          price: gift.price, qty: 0
+        };
+        cart.push(item);
+      }
+      item.qty = Math.max(0, item.qty + delta);
+      if (item.qty === 0) cart = cart.filter(i => i.key !== key);
+    }
+    saveCart();
+    renderProducts();
+    renderOrder();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     RENDER ORDER SUMMARY (right column)
+  ═══════════════════════════════════════════════════════ */
+  function renderOrder() {
+    const count  = cartCount();
+    const total  = cartTotal();
+    const empty  = document.getElementById('orderEmpty');
+    const items  = document.getElementById('orderItems');
+    const countEl = document.getElementById('orderCount');
+    const totalEl = document.getElementById('totalAmt');
+    const btn    = document.getElementById('btnOpenForm');
+    const prog   = document.getElementById('spendProgress');
+
+    countEl.textContent = count + ' 件';
+    totalEl.textContent = total.toLocaleString();
+
+    // Enable CTA only if cart has items + date/time chosen
+    const ready = count > 0 && orderDate && orderTime;
+    btn.disabled = !ready;
+
+    // Spend progress
+    const FREE_THRESHOLD = 2000;
+    if (count > 0) {
+      prog.style.display = 'block';
+      const pct = Math.min(100, (total / FREE_THRESHOLD) * 100);
+      document.getElementById('spendFill').style.width = pct + '%';
+      const remaining = FREE_THRESHOLD - total;
+      if (remaining > 0) {
+        document.getElementById('spendMsg').textContent = `再消費 NT$ ${remaining.toLocaleString()}`;
+        document.getElementById('spendGoal').textContent = '享免費外送';
+      } else {
+        document.getElementById('spendMsg').textContent = '✓ 已達免費外送門檻';
+        document.getElementById('spendGoal').textContent = '🎉';
+      }
+    } else {
+      prog.style.display = 'none';
+    }
+
+    // Items list
+    if (count === 0) {
+      items.innerHTML = `
+        <div class="order-empty" id="orderEmpty">
+          <div class="order-empty-icon">◻</div>
+          <div class="order-empty-text">Cart Empty</div>
+          <div class="order-empty-sub">在左側選擇品項<br />加入後顯示於此</div>
+        </div>`;
+    } else {
+      items.innerHTML = cart.map(item => `
+        <div class="order-item">
+          <img class="oi-img" src="${item.img}" alt="${item.name}" />
+          <div class="oi-info">
+            <div class="oi-name">${item.name}</div>
+            <div class="oi-meta">${item.zh}${item.sizeLabel ? ' · ' + item.sizeLabel : (item.spec ? ' · ' + item.spec : '')}</div>
+          </div>
+          <div class="oi-right">
+            <div class="oi-price">NT$ ${(item.price * item.qty).toLocaleString()}</div>
+            <div style="font-size:9px;color:var(--grey);margin-top:2px;">× ${item.qty}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    // Update timing text
+    updateTimingDisplay();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     TIMING DISPLAY
+  ═══════════════════════════════════════════════════════ */
+  function updateTimingDisplay() {
+    const el = document.getElementById('orderTimingText');
+    if (!el) return;
+    if (orderDate && orderTime) {
+      el.classList.remove('warn');
+      el.textContent = `${deliveryMethod === 'delivery' ? '🚗 外送' : '📅 自取'} · ${orderDate} ${orderTime}`;
+    } else {
+      el.classList.add('warn');
+      el.textContent = '請先選擇取件日期與時段';
+    }
+    // Enable/disable CTA
+    const count = cartCount();
+    const btn = document.getElementById('btnOpenForm');
+    if (btn) btn.disabled = !(count > 0 && orderDate && orderTime);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     DATE/TIME PICKER
+  ═══════════════════════════════════════════════════════ */
+  let datetimePanelOpen = false;
+
+  function toggleDatetime(tab) {
+    const panel = document.getElementById('datetimePanel');
+    if (!datetimePanelOpen) {
+      panel.classList.add('open');
+      datetimePanelOpen = true;
+    } else if (tab === 'close') {
+      panel.classList.remove('open');
+      datetimePanelOpen = false;
+    } else {
+      // Toggle off if same tab clicked again — keep open
+    }
+    // Always re-render calendar on open
+    renderCalendar();
+  }
+
+  function focusDatetime() {
+    const panel = document.getElementById('datetimePanel');
+    panel.classList.add('open');
+    datetimePanelOpen = true;
+    renderCalendar();
+    document.getElementById('datetimeStrip').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('calGrid');
+    const label = document.getElementById('calMonth');
+    const d = new Date(calYear, calMonth, 1);
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    label.textContent = months[calMonth] + ' ' + calYear;
+
+    const firstDay = d.getDay(); // 0=Sun
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    let html = '';
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+      html += `<div class="cal-day empty"></div>`;
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const thisDate = new Date(calYear, calMonth, day);
+      const isToday = thisDate.toDateString() === today.toDateString();
+      const isPast  = thisDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const isSel   = orderDate === dateStr;
+      const cls = [
+        'cal-day',
+        isToday ? 'today' : '',
+        isPast  ? 'disabled' : '',
+        isSel   ? 'selected' : ''
+      ].filter(Boolean).join(' ');
+      html += `<div class="${cls}" onclick="selectDate('${dateStr}')">${day}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function prevMonth() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
+  }
+  function nextMonth() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  }
+
+  function selectDate(dateStr) {
+    orderDate = dateStr;
+    // Format display
+    const parts = dateStr.split('-');
+    const display = `${parts[1]}/${parts[2]}`;
+    const el = document.getElementById('dateTabVal');
+    el.textContent = display;
+    el.classList.remove('placeholder');
+    renderCalendar();
+    updateTimingDisplay();
+  }
+
+  function selectTime(el, time) {
+    document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    orderTime = time;
+    const tv = document.getElementById('timeTabVal');
+    tv.textContent = time;
+    tv.classList.remove('placeholder');
+    updateTimingDisplay();
+    // Auto-close panel if both selected
+    if (orderDate && orderTime) {
+      setTimeout(() => {
+        document.getElementById('datetimePanel').classList.remove('open');
+        datetimePanelOpen = false;
+      }, 300);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     CHECKOUT FORM
+  ═══════════════════════════════════════════════════════ */
+  function openCheckoutForm() {
+    const form = document.getElementById('checkoutForm');
+    const btn  = document.getElementById('btnOpenForm');
+    form.classList.add('open');
+    btn.classList.add('hidden');
+    // Scroll to form
+    setTimeout(() => form.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+  }
+
+  function setDelivery(method) {
+    deliveryMethod = method;
+    const opts = document.querySelectorAll('.dv-opt');
+    opts.forEach((o, i) => {
+      o.classList.toggle('active', (method === 'pickup' && i === 0) || (method === 'delivery' && i === 1));
+    });
+    const addrBlock = document.getElementById('coDeliveryBlock');
+    addrBlock.classList.toggle('show', method === 'delivery');
+    updateTimingDisplay();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     TAPPAY INIT
+  ═══════════════════════════════════════════════════════ */
+  const TAPPAY_CONFIG = {
+    APP_ID:  11935,
+    APP_KEY: 'app_whdEWBH8e8Lzy4N6BysVRRMILyMDiLGGQMGtDtYMBaHLdCKuPyGDTRMjMHYP',
+    ENV:     'sandbox'
+  };
+
+  let tpReady = false;
+
+  function initTapPay() {
+    try {
+      TPDirect.setupSDK(
+        TAPPAY_CONFIG.APP_ID,
+        TAPPAY_CONFIG.APP_KEY,
+        TAPPAY_CONFIG.ENV
+      );
+      TPDirect.card.setup({
+        fields: {
+          number: { element: '#tpNumber', placeholder: '•••• •••• •••• ••••' },
+          expirationDate: { element: '#tpExpiry', placeholder: 'MM / YY' },
+          ccv: { element: '#tpCcv', placeholder: 'CVV' }
+        },
+        styles: {
+          'input': {
+            'color': '#F5F0EB',
+            'font-size': '13px',
+            'font-family': 'Inter, sans-serif'
+          },
+          ':focus': { 'color': '#F5F0EB' },
+          '.valid': { 'color': '#DD95B4' },
+          '.invalid': { 'color': '#e57373' }
+        },
+        isMaskCreditCardNumber: true,
+        maskCreditCardNumberRange: { beginIndex: 6, endIndex: 11 }
+      });
+      TPDirect.card.onUpdate(update => {
+        tpReady = update.canGetPrime;
+        const btn = document.getElementById('btnSubmit');
+        if (btn) btn.textContent = tpReady ? '確認付款 →' : '請完整填寫信用卡資料';
+      });
+      console.log('[KASS] TapPay sandbox ready');
+    } catch(e) {
+      console.error('[KASS] TapPay init error', e);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     SUBMIT ORDER
+  ═══════════════════════════════════════════════════════ */
+  async function submitOrder() {
+    const name  = document.getElementById('coName').value.trim();
+    const phone = document.getElementById('coPhone').value.trim();
+    const email = document.getElementById('coEmail').value.trim();
+    const note  = document.getElementById('coNote').value.trim();
+
+    if (!name || !phone) {
+      alert('請填寫姓名與電話');
+      return;
+    }
+    if (!orderDate || !orderTime) {
+      alert('請選擇取件日期與時段');
+      focusDatetime();
+      return;
+    }
+    if (cartCount() === 0) {
+      alert('購物車是空的');
+      return;
+    }
+
+    // Get delivery address
+    let deliveryAddr = '';
+    if (deliveryMethod === 'delivery') {
+      const city   = document.getElementById('addrCity').value.trim();
+      const dist   = document.getElementById('addrDist').value.trim();
+      const street = document.getElementById('addrStreet').value.trim();
+      if (!city || !street) {
+        alert('請填寫外送地址');
+        return;
+      }
+      deliveryAddr = `${city}${dist}${street}`;
+    }
+
+    // TapPay prime
+    const overlay = document.getElementById('tpOverlay');
+    overlay.classList.add('show');
+
+    try {
+      // Get TapPay prime
+      const primeResult = await new Promise((resolve, reject) => {
+        TPDirect.card.getPrime(result => {
+          if (result.status !== 0) reject(new Error(result.msg));
+          else resolve(result.card.prime);
+        });
+      });
+
+      // Build order payload
+      const orderNum = 'KASS-' + Date.now().toString(36).toUpperCase().slice(-6);
+      const payload = {
+        order_number:    orderNum,
+        customer_name:   name,
+        phone:           phone,
+        email:           email,
+        delivery_method: deliveryMethod,
+        delivery_address: deliveryAddr,
+        pickup_date:     orderDate,
+        pickup_time:     orderTime,
+        items:           JSON.stringify(cart),
+        total_amount:    cartTotal(),
+        status:          'pending',
+        notes:           note
+      };
+
+      // Save order to Table API
+      const res = await fetch('tables/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Order save failed');
+
+      // Call payment API
+      await fetch('api/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prime: primeResult,
+          amount: cartTotal(),
+          orderNumber: orderNum,
+          customerName: name,
+          phone, email
+        })
+      });
+
+      overlay.classList.remove('show');
+      showSuccess(orderNum, name, phone, orderDate, orderTime, deliveryMethod, deliveryAddr);
+
+    } catch(err) {
+      overlay.classList.remove('show');
+      console.error('[KASS] Payment error', err);
+      alert('付款失敗：' + err.message + '\n（Sandbox 測試卡：4242 4242 4242 4242 · 01/27 · 123）');
+    }
+  }
+
+  function showSuccess(orderNum, name, phone, date, time, method, addr) {
+    cart = [];
+    saveCart();
+    localStorage.removeItem('kass_order_cart');
+
+    document.getElementById('successNum').textContent = 'ORDER # ' + orderNum;
+    const rows = [
+      ['姓名', name],
+      ['電話', phone],
+      [method === 'delivery' ? '外送地址' : '取件地點',
+       method === 'delivery' ? addr : 'KASS · 台北市萬華區 西門町'],
+      ['日期', date],
+      ['時段', time],
+      ['金額', 'NT$ ' + cartTotal().toLocaleString() || '—']
+    ];
+    document.getElementById('successDetails').innerHTML =
+      rows.map(([k,v]) => `
+        <div class="success-row">
+          <span class="sk">${k}</span>
+          <span class="sv">${v}</span>
+        </div>`).join('');
+
+    document.getElementById('successScreen').classList.add('show');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════ */
+  document.addEventListener('DOMContentLoaded', () => {
+    renderProducts();
+    renderOrder();
+    renderCalendar();
+
+    // Init TapPay after a short delay (SDK needs DOM)
+    setTimeout(initTapPay, 500);
+  });
+  </script>
+</body>
+</html>

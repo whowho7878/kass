@@ -1,0 +1,3996 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KASS — Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:   #DD95B4;
+      --black:  #0e0c09;
+      --dark:   #111009;
+      --card:   #161310;
+      --white:  #F5F0EB;
+      --grey:   #7a7470;
+      --amber:  #C8894A;
+      --border: rgba(255,255,255,0.07);
+      --film:   #0c0a07;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      overflow-x: hidden;
+      min-height: 100svh;
+    }
+
+    /* ═══════════════════════════════════════════
+       FILM STRIP EDGES — refined version
+       細化版：更真實的底片齒孔與質感
+    ═══════════════════════════════════════════ */
+    .film-edge {
+      position: fixed;
+      top: 0; bottom: 0;
+      width: 28px;
+      z-index: 9980;
+      pointer-events: none;
+      background: var(--film);
+      overflow: hidden;
+    }
+    .film-edge-left  { left: 0;  border-right: 1px solid rgba(255,255,255,0.05); }
+    .film-edge-right { right: 0; border-left:  1px solid rgba(255,255,255,0.05); }
+
+    /* Celluoid texture on edges */
+    .film-edge::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0px, transparent 2px,
+          rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 3px
+        );
+    }
+
+    /* Amber tint — film base colour bleed */
+    .film-edge::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        rgba(200,137,74,0.04) 0%,
+        transparent 20%,
+        transparent 80%,
+        rgba(200,137,74,0.04) 100%);
+    }
+
+    .sprocket-strip {
+      position: absolute;
+      top: -60px; left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      animation: sprocketScroll 2.5s linear infinite;
+      will-change: transform;
+    }
+    @keyframes sprocketScroll {
+      from { transform: translateY(0); }
+      to   { transform: translateY(52px); }
+    }
+
+    .sprocket-hole {
+      width: 14px; height: 22px;
+      border-radius: 2px;
+      background: var(--black);
+      border: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+      margin: 15px 0;
+      box-shadow:
+        inset 0 0 6px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(0,0,0,0.5);
+    }
+
+    /* ── Frame counter (bottom-left) ── */
+    #film-counter {
+      position: fixed;
+      bottom: 28px; left: 38px;
+      z-index: 9981;
+      pointer-events: none;
+      font-family: 'Inter', monospace;
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 2px;
+      color: rgba(200,137,74,0.45);
+      line-height: 1.8;
+    }
+    #film-counter .frame-bar {
+      width: 60px; height: 1px;
+      background: rgba(200,137,74,0.2);
+      margin-top: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    #film-counter .frame-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      background: rgba(200,137,74,0.6);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    /* Timecode top-right */
+    #wkw-timecode {
+      position: fixed;
+      top: 24px; right: 40px;
+      z-index: 9981;
+      font-family: 'Inter', monospace;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px;
+      color: rgba(200,137,74,0.4);
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       NAVIGATION
+    ═══════════════════════════════════════════ */
+    nav {
+      position: fixed; top: 0; left: 28px; right: 28px;
+      z-index: 900;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      background: rgba(14,12,9,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo img {
+      height: 24px;
+      filter: invert(1) brightness(0.9);
+    }
+    .nav-back {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--white); }
+    .nav-back::before {
+      content: '←';
+      font-size: 12px;
+    }
+    .nav-step-indicator {
+      font-family: 'Inter', monospace;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .nav-step-indicator span { color: var(--pink); }
+
+    /* ═══════════════════════════════════════════
+       MAIN LAYOUT
+    ═══════════════════════════════════════════ */
+    main {
+      padding-top: 80px;
+      padding-left: 28px;
+      padding-right: 28px;
+      min-height: 100svh;
+    }
+
+    /* ═══════════════════════════════════════════
+       STEP SYSTEM
+    ═══════════════════════════════════════════ */
+    .step-panel {
+      display: none;
+      min-height: calc(100svh - 80px);
+    }
+    .step-panel.active { display: block; }
+
+    /* ── Step Header ── */
+    .step-header {
+      padding: 60px 40px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 40px;
+    }
+    .step-num {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 12px;
+    }
+    .step-title {
+      font-size: clamp(32px, 5vw, 60px);
+      font-weight: 900; line-height: 0.9;
+      letter-spacing: -0.04em;
+    }
+    .step-title span { color: var(--pink); }
+    .step-subtitle {
+      margin-top: 14px;
+      font-size: 12px; font-weight: 300;
+      color: var(--grey); line-height: 1.8;
+      font-family: 'Noto Sans TC', sans-serif;
+      max-width: 400px;
+    }
+    .step-count-label {
+      text-align: right;
+      font-family: 'Inter', monospace;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); line-height: 2;
+      flex-shrink: 0;
+    }
+    .step-count-label strong { color: var(--white); font-size: 28px; font-weight: 900; letter-spacing: -0.03em; display: block; }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      height: 1px;
+      background: var(--border);
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--amber));
+      transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* ═══════════════════════════════════════════
+       STEP 1 — DELIVERY METHOD
+    ═══════════════════════════════════════════ */
+    /* Delivery method cards — reuse category-grid style */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100svh - 200px);
+    }
+    .category-card {
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      padding: 48px 40px;
+      min-height: 360px;
+      background: var(--dark);
+      transition: background 0.5s;
+    }
+    .category-card:last-child { border-right: none; }
+    .category-card:hover { background: #191512; }
+
+    /* Film-still overlay on hover */
+    .category-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg,
+        rgba(200,137,74,0.04) 0%,
+        transparent 50%,
+        rgba(221,149,180,0.03) 100%);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .category-card:hover::before { opacity: 1; }
+
+    /* Top-left frame mark */
+    .category-card::after {
+      content: '';
+      position: absolute;
+      top: 16px; left: 16px;
+      width: 20px; height: 20px;
+      border-top: 1px solid rgba(200,137,74,0.3);
+      border-left: 1px solid rgba(200,137,74,0.3);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .category-card:hover::after { opacity: 1; }
+
+    .cat-number {
+      font-family: 'Inter', monospace;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 16px;
+    }
+    .cat-title {
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 900; line-height: 0.9;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+    }
+    .cat-title .the {
+      display: block;
+      font-size: 0.45em; font-weight: 300;
+      letter-spacing: 0.1em;
+      color: var(--pink); text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .cat-sub {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey); line-height: 1.7;
+      font-family: 'Noto Sans TC', sans-serif;
+      max-width: 280px;
+    }
+    .cat-arrow {
+      position: absolute;
+      bottom: 40px; right: 40px;
+      width: 40px; height: 40px;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: var(--grey);
+      transition: all 0.3s;
+    }
+    .category-card:hover .cat-arrow {
+      border-color: var(--pink);
+      color: var(--pink);
+      transform: translateX(4px);
+    }
+
+    /* ═══════════════════════════════════════════
+       STEP 2 — CAKE FLAVOUR (US One-Sheet grid)
+    ═══════════════════════════════════════════ */
+    .flavour-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 2px;
+      padding: 2px;
+    }
+
+    /* Each flavour = a film poster lightbox */
+    .flavour-poster {
+      position: relative;
+      cursor: pointer;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 14px;
+      transition: all 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+      /* US One-Sheet feel: tall portrait */
+    }
+    .flavour-poster:hover {
+      border-color: rgba(221,149,180,0.3);
+      z-index: 2;
+      transform: translateY(-4px);
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.5),
+        0 0 60px rgba(221,149,180,0.06);
+    }
+    .flavour-poster.selected {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 1px var(--pink), 0 8px 40px rgba(221,149,180,0.15);
+    }
+
+    /* Film-frame corners on selected */
+    .flavour-poster.selected::before,
+    .flavour-poster.selected::after {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+    }
+    .flavour-poster.selected::before {
+      top: 4px; left: 4px;
+      border-top: 1.5px solid var(--pink);
+      border-left: 1.5px solid var(--pink);
+    }
+    .flavour-poster.selected::after {
+      bottom: 4px; right: 4px;
+      border-bottom: 1.5px solid var(--pink);
+      border-right: 1.5px solid var(--pink);
+    }
+
+    .poster-img-wrap {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 14px;
+      background: #0a0908;
+    }
+    /* US One-Sheet 2:3 ratio */
+    .poster-img-wrap::before {
+      content: '';
+      display: block;
+      padding-top: 150%; /* 2:3 */
+    }
+    .poster-img-wrap img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: brightness(0.80) contrast(1.08) saturate(0.85);
+      transition: filter 0.6s ease, transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .flavour-poster:hover .poster-img-wrap img {
+      filter: brightness(0.92) contrast(1.10) saturate(1.0);
+      transform: scale(1.03);
+    }
+    .flavour-poster.selected .poster-img-wrap img {
+      filter: brightness(0.95) contrast(1.10) saturate(1.05);
+    }
+
+    /* WKW amber overlay on hover */
+    .poster-img-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(to bottom, transparent 50%, rgba(14,12,9,0.85) 100%),
+        radial-gradient(ellipse at 0% 100%, rgba(200,137,74,0.10) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Ratio badge */
+    .poster-ratio-badge {
+      position: absolute;
+      top: 8px; right: 8px;
+      font-family: 'Inter', monospace;
+      font-size: 7px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      background: rgba(0,0,0,0.5);
+      padding: 2px 6px;
+      z-index: 2;
+    }
+
+    /* Selected tick */
+    .poster-selected-mark {
+      position: absolute;
+      top: 8px; left: 8px;
+      width: 20px; height: 20px;
+      background: var(--pink);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--black);
+      font-weight: 700;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .flavour-poster.selected .poster-selected-mark { opacity: 1; }
+
+    .poster-caption {
+      padding: 0 2px;
+    }
+    .poster-the {
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 4px;
+    }
+    .poster-name-text {
+      font-size: clamp(13px, 1.4vw, 16px);
+      font-weight: 700; line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .poster-price-from {
+      font-family: 'Inter', monospace;
+      font-size: 10px; font-weight: 500;
+      color: var(--grey); letter-spacing: 1px;
+    }
+    .poster-price-from span { color: var(--amber); }
+
+    /* ═══════════════════════════════════════════
+       STEP 2B — GIFT BOX (UK Quad grid)
+    ═══════════════════════════════════════════ */
+    .giftbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2px;
+      padding: 2px;
+    }
+    .giftbox-poster {
+      position: relative;
+      cursor: pointer;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 14px;
+      transition: all 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .giftbox-poster:hover {
+      border-color: rgba(200,137,74,0.35);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 60px rgba(200,137,74,0.06);
+    }
+    .giftbox-poster.selected {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 1px var(--amber), 0 8px 40px rgba(200,137,74,0.15);
+    }
+    .giftbox-poster.selected::before {
+      content: '';
+      position: absolute;
+      top: 4px; left: 4px;
+      width: 14px; height: 14px;
+      border-top: 1.5px solid var(--amber);
+      border-left: 1.5px solid var(--amber);
+    }
+    .giftbox-poster.selected::after {
+      content: '';
+      position: absolute;
+      bottom: 4px; right: 4px;
+      width: 14px; height: 14px;
+      border-bottom: 1.5px solid var(--amber);
+      border-right: 1.5px solid var(--amber);
+    }
+
+    /* UK Quad 4:3 ratio */
+    .giftbox-img-wrap {
+      position: relative; overflow: hidden;
+      margin-bottom: 14px;
+      background: #0a0908;
+    }
+    .giftbox-img-wrap::before {
+      content: ''; display: block;
+      padding-top: 75%; /* 4:3 */
+    }
+    .giftbox-img-wrap img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: brightness(0.80) contrast(1.08) saturate(0.85);
+      transition: filter 0.6s, transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .giftbox-poster:hover .giftbox-img-wrap img {
+      filter: brightness(0.92) contrast(1.10) saturate(1.0);
+      transform: scale(1.03);
+    }
+    .giftbox-img-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(to bottom, transparent 40%, rgba(14,12,9,0.80) 100%),
+        radial-gradient(ellipse at 100% 100%, rgba(200,137,74,0.10) 0%, transparent 55%);
+      pointer-events: none; z-index: 1;
+    }
+    .giftbox-selected-mark {
+      position: absolute; top: 8px; left: 8px;
+      width: 20px; height: 20px;
+      background: var(--amber);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--black); font-weight: 700;
+      z-index: 2; opacity: 0; transition: opacity 0.2s;
+    }
+    .giftbox-poster.selected .giftbox-selected-mark { opacity: 1; }
+    .giftbox-ratio-badge {
+      position: absolute; top: 8px; right: 8px;
+      font-family: 'Inter', monospace;
+      font-size: 7px; font-weight: 700;
+      letter-spacing: 1.5px; color: rgba(255,255,255,0.25);
+      background: rgba(0,0,0,0.5); padding: 2px 6px;
+      z-index: 2;
+    }
+    .giftbox-caption { padding: 0 2px; }
+    .giftbox-the {
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 4px;
+    }
+    .giftbox-name-text {
+      font-size: clamp(14px, 1.6vw, 18px);
+      font-weight: 700; line-height: 1.1;
+      letter-spacing: -0.02em; margin-bottom: 6px;
+    }
+    .giftbox-price {
+      font-family: 'Inter', monospace;
+      font-size: 11px; font-weight: 600;
+      color: var(--amber); letter-spacing: 1px;
+    }
+
+    /* ═══════════════════════════════════════════
+       STEP 3 — SIZE (for cakes)
+    ═══════════════════════════════════════════ */
+    .size-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 40px;
+    }
+    .size-card {
+      cursor: pointer;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 40px 32px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      transition: all 0.4s;
+      position: relative;
+      min-height: 280px;
+    }
+    .size-card:hover {
+      border-color: rgba(221,149,180,0.3);
+      background: #161310;
+    }
+    .size-card.selected {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 1px var(--pink);
+    }
+    .size-card.selected::before {
+      content: '';
+      position: absolute; top: 8px; left: 8px;
+      width: 12px; height: 12px;
+      border-top: 1.5px solid var(--pink);
+      border-left: 1.5px solid var(--pink);
+    }
+    .size-card.selected::after {
+      content: '';
+      position: absolute; bottom: 8px; right: 8px;
+      width: 12px; height: 12px;
+      border-bottom: 1.5px solid var(--pink);
+      border-right: 1.5px solid var(--pink);
+    }
+
+    /* Cake size visualizer: concentric circles */
+    .size-visual {
+      position: relative;
+      width: 80px; height: 80px;
+      margin-bottom: 24px;
+    }
+    .size-circle {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      transition: border-color 0.3s;
+    }
+    .size-card:hover .size-circle,
+    .size-card.selected .size-circle { border-color: var(--pink-dim, rgba(221,149,180,0.3)); }
+
+    .size-inch {
+      font-family: 'Inter', monospace;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 900; line-height: 1;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+    .size-card.selected .size-inch { color: var(--pink); }
+    .size-unit {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 16px;
+    }
+    .size-serves {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+      margin-bottom: 12px;
+    }
+    .size-price {
+      font-family: 'Inter', monospace;
+      font-size: 13px; font-weight: 600;
+      color: var(--amber); letter-spacing: 1px;
+    }
+
+    /* ═══════════════════════════════════════════
+       STEP 4 — PACKAGING
+    ═══════════════════════════════════════════ */
+    .packaging-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100svh - 200px);
+    }
+    .packaging-left {
+      padding: 40px;
+      border-right: 1px solid var(--border);
+    }
+    .packaging-right {
+      padding: 40px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .pkg-section-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 20px;
+    }
+    .pkg-section-title span { color: var(--pink); }
+
+    /* Color swatch grid */
+    .color-options {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    .color-swatch {
+      cursor: pointer;
+      position: relative;
+    }
+    .swatch-color {
+      width: 100%;
+      padding-top: 100%;
+      border: 2px solid transparent;
+      border-radius: 2px;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .color-swatch.selected .swatch-color {
+      border-color: var(--white);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.3);
+    }
+    .color-swatch:hover .swatch-color {
+      transform: scale(1.06);
+    }
+    .swatch-color::after {
+      content: '✓';
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: rgba(255,255,255,0.0);
+      transition: color 0.2s;
+    }
+    .color-swatch.selected .swatch-color::after { color: rgba(255,255,255,0.9); }
+    .swatch-label {
+      text-align: center;
+      font-size: 9px; font-weight: 500;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--grey); margin-top: 6px;
+    }
+
+    /* Package preview */
+    .pkg-preview {
+      width: 260px; height: 360px;
+      position: relative;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      gap: 16px;
+    }
+
+    /* Box */
+    .preview-box {
+      width: 180px; height: 120px;
+      border: 2px solid rgba(255,255,255,0.12);
+      position: relative;
+      transition: background-color 0.5s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .preview-box::before {
+      content: 'KASS';
+      font-family: 'Inter', sans-serif;
+      font-size: 10px; font-weight: 900;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.25);
+    }
+    /* Lid */
+    .preview-box-lid {
+      position: absolute;
+      top: -16px; left: -8px; right: -8px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.12);
+      border-bottom: none;
+      transition: background-color 0.5s ease;
+    }
+
+    /* Bag */
+    .preview-bag {
+      width: 140px;
+      position: relative;
+      margin-bottom: 8px;
+      transition: border-color 0.5s ease;
+    }
+    .preview-bag-body {
+      width: 100%;
+      height: 180px;
+      border: 2px solid rgba(255,255,255,0.12);
+      position: relative;
+      display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 16px;
+      transition: background-color 0.5s ease;
+    }
+    .preview-bag-handle {
+      position: absolute;
+      top: -28px; left: 30%; right: 30%;
+      height: 32px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+    }
+    .preview-bag-logo {
+      font-family: 'Inter', sans-serif;
+      font-size: 9px; font-weight: 900;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ═══════════════════════════════════════════
+       DELIVERY ADDRESS (step 1b — only for delivery)
+    ═══════════════════════════════════════════ */
+    .delivery-address-block {
+      display: none; /* shown by JS when delivery selected */
+      padding: 40px;
+      border-top: 1px solid var(--border);
+      max-width: 640px;
+    }
+    .delivery-address-block.show { display: block; }
+    .addr-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 20px;
+    }
+    .addr-notice {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 16px;
+      border: 1px solid rgba(200,137,74,0.2);
+      background: rgba(200,137,74,0.04);
+      margin-bottom: 24px;
+    }
+    .addr-notice-icon {
+      font-size: 16px; flex-shrink: 0; margin-top: 2px;
+    }
+    .addr-notice-text {
+      font-size: 11px; color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+      line-height: 1.8;
+    }
+    .addr-notice-text strong { color: var(--amber); font-weight: 600; }
+    .addr-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .addr-field { margin-bottom: 12px; }
+    .addr-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 8px; display: block;
+    }
+    .addr-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--white);
+      padding: 14px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      border-radius: 0;
+      -webkit-appearance: none;
+    }
+    .addr-input:focus { border-color: var(--amber); }
+    .addr-input::placeholder { color: rgba(255,255,255,0.2); }
+    .delivery-fee-preview {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .dfp-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .dfp-val {
+      font-family: 'Inter', monospace;
+      font-size: 13px; font-weight: 600;
+      color: var(--amber);
+    }
+    .dfp-note {
+      font-size: 9px; color: rgba(255,255,255,0.2);
+      letter-spacing: 1px; font-family: 'Noto Sans TC';
+    }
+
+    /* ═══════════════════════════════════════════
+       STEP 2 — DATE & TIME (new position)
+    ═══════════════════════════════════════════ */
+    .datetime-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      padding: 40px;
+      align-items: start;
+    }
+    .dt-section { }
+    .dt-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 20px;
+    }
+    .dt-label span { color: var(--pink); }
+
+    /* Date picker */
+    .date-grid-header {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 8px;
+    }
+    .date-grid-header span {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); text-align: center;
+      padding: 8px 0;
+    }
+    .date-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .date-cell {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Inter', monospace;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      color: var(--grey);
+    }
+    .date-cell:not(.disabled):not(.empty):hover {
+      border-color: var(--border);
+      color: var(--white);
+    }
+    .date-cell.today { color: var(--pink); border-color: rgba(221,149,180,0.2); }
+    .date-cell.selected {
+      background: var(--pink); color: var(--black);
+      font-weight: 700;
+    }
+    .date-cell.disabled { color: rgba(255,255,255,0.1); cursor: default; }
+    .date-cell.empty { cursor: default; }
+
+    /* Time slots */
+    .time-slots {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 12px;
+    }
+    .time-slot {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      font-family: 'Inter', monospace;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--grey);
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .time-slot:hover { border-color: rgba(221,149,180,0.3); color: var(--white); }
+    .time-slot.selected { border-color: var(--pink); color: var(--pink); background: rgba(221,149,180,0.06); }
+    .time-slot.disabled { opacity: 0.25; cursor: default; }
+
+    /* ═══════════════════════════════════════════
+       SPEND PROGRESS BAR
+    ═══════════════════════════════════════════ */
+    .spend-bar {
+      position: fixed;
+      top: 64px; left: 28px; right: 28px;
+      z-index: 799;
+      background: rgba(14,12,9,0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .spend-bar.visible { display: flex; }
+    .spend-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 0;
+    }
+    .spend-bar-text {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--grey);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .spend-bar-text strong { color: var(--white); }
+    .spend-bar-text .text-pink { color: var(--pink); }
+    .spend-bar-text .text-amber { color: var(--amber); }
+    .spend-track {
+      flex: 1;
+      height: 3px;
+      background: rgba(255,255,255,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+    .spend-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--amber));
+      transition: width 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+      width: 0%;
+    }
+    .spend-milestone {
+      position: absolute;
+      top: -4px;
+      width: 11px; height: 11px;
+      border: 2px solid var(--border);
+      background: var(--black);
+      border-radius: 50%;
+      transform: translateX(-50%);
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .spend-milestone.reached {
+      border-color: var(--pink);
+      background: var(--pink);
+    }
+    .spend-milestone.reached.gold {
+      border-color: var(--amber);
+      background: var(--amber);
+    }
+    .spend-reward {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      flex-shrink: 0;
+      font-family: 'Inter', monospace;
+    }
+    /* Upsell chips inside spend bar */
+    .spend-upsell {
+      display: flex; gap: 8px;
+      padding: 8px 0 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .spend-upsell::-webkit-scrollbar { display: none; }
+    .upsell-chip {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      padding: 7px 14px;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .upsell-chip:hover { border-color: var(--amber); color: var(--amber); }
+    .upsell-chip .chip-price { color: var(--amber); }
+    .upsell-chip .chip-plus {
+      font-size: 12px; font-weight: 300;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ═══════════════════════════════════════════
+       ORDER BAR (bottom)
+    ═══════════════════════════════════════════ */
+    .order-bar {
+      position: fixed;
+      bottom: 0; left: 28px; right: 28px;
+      background: rgba(14,12,9,0.96);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      padding: 16px 40px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      z-index: 800;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .order-bar.visible { transform: translateY(0); }
+
+    .order-summary-text {
+      font-size: 11px; font-weight: 300;
+      color: var(--grey); line-height: 1.8;
+      font-family: 'Noto Sans TC', sans-serif;
+      flex: 1;
+    }
+    .order-summary-text strong { color: var(--white); font-weight: 600; }
+    .order-total {
+      font-family: 'Inter', monospace;
+      font-size: 18px; font-weight: 700;
+      color: var(--amber); letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+    .btn-next {
+      flex-shrink: 0;
+      padding: 14px 36px;
+      background: var(--pink);
+      color: var(--black);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      border: none; cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-next:hover { background: var(--white); }
+    .btn-next:disabled { opacity: 0.3; cursor: default; }
+    .btn-next.amber { background: var(--amber); }
+    /* Cart icon button on order bar */
+    .btn-cart-icon {
+      flex-shrink: 0;
+      position: relative;
+      padding: 12px 18px;
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      transition: border-color 0.2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-cart-icon:hover { border-color: var(--pink); }
+    .cart-badge {
+      position: absolute;
+      top: -6px; right: -6px;
+      background: var(--pink);
+      color: var(--black);
+      border-radius: 50%;
+      width: 18px; height: 18px;
+      font-size: 9px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      transform: scale(0.7);
+    }
+    .cart-badge.show { opacity: 1; transform: scale(1); }
+
+    /* ═══════════════════════════════════════════
+       CART DRAWER
+    ═══════════════════════════════════════════ */
+    .cart-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .cart-overlay.open { opacity: 1; pointer-events: all; }
+
+    .cart-drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(460px, 100vw);
+      background: #0e0c09;
+      border-left: 1px solid var(--border);
+      z-index: 1101;
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+
+    .cart-header {
+      padding: 28px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .cart-header-title {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink);
+    }
+    .cart-count-label {
+      font-family: 'Inter', monospace;
+      font-size: 9px; color: var(--grey);
+      letter-spacing: 2px;
+    }
+    .cart-close {
+      background: none; border: 1px solid var(--border);
+      color: var(--grey); cursor: pointer;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .cart-close:hover { border-color: var(--white); color: var(--white); }
+
+    .cart-body {
+      flex: 1; overflow-y: auto;
+      padding: 20px 0;
+    }
+    .cart-body::-webkit-scrollbar { width: 3px; }
+    .cart-body::-webkit-scrollbar-track { background: transparent; }
+    .cart-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .cart-empty {
+      padding: 60px 28px;
+      text-align: center;
+    }
+    .cart-empty-logo {
+      height: 32px; filter: invert(1) brightness(0.25);
+      margin: 0 auto 20px; display: block;
+    }
+    .cart-empty p {
+      font-size: 11px; color: var(--grey);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+
+    /* Cart item */
+    .cart-item {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .cart-item:hover { background: rgba(255,255,255,0.02); }
+
+    .cart-item-img {
+      width: 56px; height: 72px; /* US ratio-ish */
+      object-fit: cover;
+      filter: brightness(0.75) sepia(20%);
+    }
+    .cart-item-img.uk {
+      height: 42px; /* UK Quad */
+    }
+
+    .cart-item-info { min-width: 0; }
+    .cart-item-the {
+      font-size: 7px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 2px;
+    }
+    .cart-item-name {
+      font-size: 13px; font-weight: 700;
+      line-height: 1.2; letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cart-item-meta {
+      font-size: 10px; color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 300; line-height: 1.6;
+    }
+    .cart-item-pkg {
+      display: flex; gap: 4px; margin-top: 4px;
+    }
+    .cart-item-swatch {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+      display: inline-block;
+    }
+
+    .cart-item-right {
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 10px;
+      flex-shrink: 0;
+    }
+    .cart-item-price {
+      font-family: 'Inter', monospace;
+      font-size: 13px; font-weight: 700;
+      color: var(--amber); letter-spacing: 0.5px;
+    }
+    .cart-item-qty {
+      display: flex; align-items: center; gap: 0;
+    }
+    .qty-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--grey);
+      width: 24px; height: 24px;
+      font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .qty-btn:hover { border-color: var(--white); color: var(--white); }
+    .qty-num {
+      font-family: 'Inter', monospace;
+      font-size: 12px; font-weight: 700;
+      color: var(--white);
+      width: 28px; text-align: center;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      height: 24px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cart-item-del {
+      background: none; border: none;
+      color: rgba(255,255,255,0.15); cursor: pointer;
+      font-size: 11px; letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      padding: 0;
+    }
+    .cart-item-del:hover { color: rgba(221,149,180,0.7); }
+
+    /* Cart pickup time row */
+    .cart-item-time {
+      padding: 10px 28px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--grey);
+    }
+    .cart-item-time span { color: var(--white); }
+
+    /* Spend bar inside cart drawer */
+    .cart-spend-block {
+      padding: 16px 28px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cart-spend-label {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 8px;
+    }
+    .cart-spend-label strong { color: var(--white); }
+    .cart-spend-label .clr-pink { color: var(--pink); }
+    .cart-spend-label .clr-amber { color: var(--amber); }
+    .cart-spend-track {
+      height: 4px; background: rgba(255,255,255,0.06);
+      margin-bottom: 6px; position: relative; overflow: hidden;
+    }
+    .cart-spend-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--amber));
+      transition: width 0.5s ease;
+    }
+    .cart-spend-milestones {
+      display: flex; justify-content: space-between;
+      font-size: 8px; letter-spacing: 1px;
+      color: rgba(255,255,255,0.2);
+      font-family: 'Inter', monospace;
+    }
+    .cart-spend-milestones span.hit { color: var(--pink); }
+    /* Upsell row inside drawer */
+    .cart-upsell-row {
+      display: flex; gap: 8px;
+      overflow-x: auto; scrollbar-width: none;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cart-upsell-row::-webkit-scrollbar { display: none; }
+    .cart-upsell-chip {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .cart-upsell-chip:hover { border-color: var(--amber); }
+    .cut-name { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--white); }
+    .cut-sub  { font-size: 9px; color: var(--grey); font-family: 'Noto Sans TC'; }
+    .cut-price { font-size: 11px; font-weight: 700; color: var(--amber); font-family: 'Inter', monospace; margin-top: 4px; }
+
+    .cart-footer {
+      padding: 20px 28px;
+      border-top: 1px solid var(--border);
+    }
+    .cart-subtotal {
+      display: flex; justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+    }
+    .cart-subtotal-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .cart-subtotal-amount {
+      font-family: 'Inter', monospace;
+      font-size: 22px; font-weight: 900;
+      color: var(--amber); letter-spacing: -0.02em;
+    }
+    .cart-add-more {
+      display: block; width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--grey);
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .cart-add-more:hover { border-color: var(--white); color: var(--white); }
+    .cart-checkout-btn {
+      display: block; width: 100%;
+      padding: 18px;
+      background: var(--pink);
+      color: var(--black);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      border: none; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .cart-checkout-btn:hover { background: var(--white); }
+    .cart-checkout-btn:disabled { opacity: 0.3; cursor: default; }
+    .cart-notice {
+      margin-top: 12px;
+      font-size: 9px; color: var(--grey);
+      letter-spacing: 1px; text-align: center;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    /* ═══════════════════════════════════════════
+       TAPPAY PAYMENT UI
+    ═══════════════════════════════════════════ */
+
+    /* 付款方式切換 tabs */
+    .pay-method-tabs {
+      display: flex; gap: 0;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+    .pay-method-tab {
+      flex: 1; padding: 14px 8px;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey); cursor: pointer;
+      border: none; background: transparent;
+      border-right: 1px solid var(--border);
+      transition: all 0.2s;
+      display: flex; align-items: center;
+      justify-content: center; gap: 6px;
+    }
+    .pay-method-tab:last-child { border-right: none; }
+    .pay-method-tab:hover { color: var(--white); background: rgba(255,255,255,0.03); }
+    .pay-method-tab.active {
+      color: var(--black); background: var(--pink);
+    }
+    .pay-method-tab.active.amber { background: var(--amber); }
+
+    /* TapPay 信用卡 iframe 容器 */
+    .tp-field-wrap {
+      margin-bottom: 16px;
+    }
+    .tp-field-label {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 8px; display: block;
+    }
+    /* TapPay SDK 會把 iframe 注入這個 div */
+    .tp-field {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      height: 48px;
+      transition: border-color 0.2s;
+    }
+    .tp-field.valid   { border-color: rgba(200,137,74,0.6); }
+    .tp-field.invalid { border-color: rgba(221,149,180,0.8); }
+    .tp-field.focus   { border-color: var(--pink); }
+
+    /* 卡號 + 到期日 + CVV 排版 */
+    .tp-card-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* 卡別 icon 行 */
+    .tp-card-brands {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 20px;
+    }
+    .tp-brand-icon {
+      height: 22px; opacity: 0.35;
+      filter: invert(1) brightness(0.9);
+      transition: opacity 0.2s;
+    }
+    .tp-brand-icon.active { opacity: 1; }
+    .tp-brand-text {
+      font-size: 9px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--grey);
+    }
+
+    /* Apple Pay / Google Pay 按鈕區 */
+    .tp-wallet-section { margin-bottom: 4px; }
+    .tp-wallet-btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%;
+      padding: 16px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--white);
+      font-size: 14px; font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 10px;
+    }
+    .tp-wallet-btn:hover { border-color: var(--white); background: rgba(255,255,255,0.04); }
+    .tp-wallet-btn.apple  { background: var(--white); color: var(--black); }
+    .tp-wallet-btn.apple:hover { background: #e0dcd7; border-color: transparent; }
+    .tp-wallet-btn.google { background: var(--white); color: var(--black); }
+    .tp-wallet-btn.google:hover { background: #e0dcd7; border-color: transparent; }
+    .tp-wallet-btn:disabled { opacity: 0.3; cursor: default; }
+    .tp-wallet-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 16px 0;
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .tp-wallet-divider::before,
+    .tp-wallet-divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* 付款安全說明 */
+    .tp-secure-notice {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px;
+      border: 1px solid rgba(200,137,74,0.15);
+      background: rgba(200,137,74,0.03);
+      margin-top: 16px;
+      margin-bottom: 4px;
+    }
+    .tp-secure-icon { font-size: 14px; flex-shrink: 0; }
+    .tp-secure-text {
+      font-size: 9px; color: var(--grey);
+      letter-spacing: 1px; line-height: 1.8;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .tp-secure-text strong { color: var(--amber); }
+
+    /* 付款狀態 overlay */
+    .tp-processing-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(14,12,9,0.92);
+      z-index: 2000;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px;
+    }
+    .tp-processing-overlay.show { display: flex; }
+    .tp-processing-spinner {
+      width: 48px; height: 48px;
+      border: 2px solid var(--border);
+      border-top-color: var(--pink);
+      border-radius: 50%;
+      animation: tpSpin 0.8s linear infinite;
+    }
+    @keyframes tpSpin { to { transform: rotate(360deg); } }
+    .tp-processing-text {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .tp-processing-sub {
+      font-size: 10px; color: rgba(255,255,255,0.2);
+      letter-spacing: 2px; font-family: 'Noto Sans TC';
+    }
+
+    /* 沙盒測試提示 banner */
+    .tp-sandbox-banner {
+      padding: 10px 16px;
+      background: rgba(200,137,74,0.08);
+      border: 1px solid rgba(200,137,74,0.25);
+      margin-bottom: 20px;
+      font-size: 9px; color: var(--amber);
+      letter-spacing: 2px; text-transform: uppercase;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ═══════════════════════════════════════════
+       CHECKOUT STEP (step 4)
+    ═══════════════════════════════════════════ */
+    .checkout-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      min-height: calc(100svh - 200px);
+    }
+    .checkout-left {
+      padding: 48px 48px 48px 40px;
+      border-right: 1px solid var(--border);
+    }
+    .checkout-right {
+      padding: 48px 40px 48px 48px;
+      background: rgba(255,255,255,0.015);
+    }
+    .checkout-section-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 24px;
+    }
+    .checkout-section-title span { color: var(--pink); }
+    .co-field {
+      margin-bottom: 20px;
+    }
+    .co-label {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 8px; display: block;
+    }
+    .co-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--white);
+      padding: 14px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px; /* prevent iOS zoom */
+      outline: none;
+      transition: border-color 0.2s;
+      border-radius: 0;
+      -webkit-appearance: none;
+    }
+    .co-input:focus { border-color: var(--pink); }
+    .co-input::placeholder { color: rgba(255,255,255,0.2); }
+    .co-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .co-textarea {
+      width: 100%; height: 80px; resize: none;
+    }
+
+    /* Order review items in checkout */
+    .co-item-row {
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .co-item-img {
+      width: 48px; height: 62px;
+      object-fit: cover;
+      filter: brightness(0.7) sepia(15%);
+    }
+    .co-item-img.uk { height: 36px; }
+    .co-item-name {
+      font-size: 12px; font-weight: 700;
+      line-height: 1.3; letter-spacing: -0.01em;
+    }
+    .co-item-sub {
+      font-size: 10px; color: var(--grey);
+      font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 300; line-height: 1.6;
+    }
+    .co-item-price {
+      font-family: 'Inter', monospace;
+      font-size: 12px; font-weight: 700;
+      color: var(--amber); text-align: right; white-space: nowrap;
+    }
+    .co-total-row {
+      display: flex; justify-content: space-between;
+      align-items: baseline;
+      padding: 20px 0 0;
+    }
+    .co-total-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--grey);
+    }
+    .co-total-amount {
+      font-family: 'Inter', monospace;
+      font-size: 24px; font-weight: 900;
+      color: var(--amber); letter-spacing: -0.02em;
+    }
+    .co-submit-btn {
+      display: block; width: 100%;
+      padding: 20px;
+      background: var(--pink);
+      color: var(--black);
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      border: none; cursor: pointer;
+      margin-top: 24px;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .co-submit-btn:hover { background: var(--white); transform: translateY(-1px); }
+    .co-submit-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+    .co-note {
+      font-size: 9px; color: var(--grey);
+      letter-spacing: 1px; text-align: center;
+      margin-top: 12px;
+    }
+    /* Pickup time display in checkout */
+    .co-pickup-block {
+      margin-top: 24px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      background: rgba(200,137,74,0.03);
+    }
+    .co-pickup-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 8px;
+    }
+    .co-pickup-val {
+      font-family: 'Inter', monospace;
+      font-size: 14px; font-weight: 600;
+      color: var(--white); letter-spacing: 1px;
+    }
+
+    /* Success screen */
+    .order-success {
+      display: none;
+      min-height: calc(100svh - 80px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+    }
+    .order-success.active { display: flex; }
+    .success-logo {
+      height: 56px; width: auto;
+      filter: invert(1) brightness(0.9);
+      margin-bottom: 40px;
+    }
+    .success-order-num {
+      font-family: 'Inter', monospace;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 16px;
+    }
+    .success-title {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 900; line-height: 0.9;
+      letter-spacing: -0.04em; margin-bottom: 24px;
+    }
+    .success-title span { color: var(--pink); }
+    .success-quote {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(15px, 2vw, 20px);
+      color: rgba(255,255,255,0.45);
+      max-width: 480px; line-height: 1.6;
+      margin-bottom: 48px;
+    }
+    .success-details {
+      text-align: left;
+      border: 1px solid var(--border);
+      padding: 24px 32px;
+      max-width: 480px; width: 100%;
+      margin-bottom: 32px;
+    }
+    .success-detail-row {
+      display: flex; justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+    .success-detail-row:last-child { border-bottom: none; }
+    .success-detail-row .label { color: var(--grey); letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
+    .success-detail-row .val { color: var(--white); font-weight: 600; }
+    .success-back-btn {
+      padding: 14px 48px;
+      border: 1px solid var(--border);
+      color: var(--grey);
+      background: transparent;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none; display: inline-block;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .success-back-btn:hover { border-color: var(--white); color: var(--white); }
+
+    /* ═══════════════════════════════════════════
+       STEP TAB SWITCHER (cat step 1)
+    ═══════════════════════════════════════════ */
+    .sub-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .sub-tab {
+      padding: 16px 32px;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--grey);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+    .sub-tab:hover { color: var(--white); }
+    .sub-tab.active { color: var(--white); border-bottom-color: var(--pink); }
+    .sub-tab.active.amber-tab { border-bottom-color: var(--amber); }
+
+    .sub-panel { display: none; }
+    .sub-panel.active { display: block; }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .film-edge { width: 20px; }
+      main { padding-left: 20px; padding-right: 20px; }
+      nav { left: 20px; right: 20px; padding: 16px 20px; }
+      .step-header { padding: 40px 20px 28px; flex-direction: column; align-items: flex-start; gap: 16px; }
+      .category-grid { grid-template-columns: 1fr; }
+      .category-card { min-height: 240px; }
+      .size-grid { grid-template-columns: repeat(3, 1fr); padding: 20px; gap: 8px; }
+      .size-card { min-height: 200px; padding: 24px 12px; }
+      .flavour-grid { grid-template-columns: repeat(2, 1fr); }
+      .giftbox-grid { grid-template-columns: 1fr; }
+      .packaging-layout { grid-template-columns: 1fr; }
+      .packaging-right { display: none; }
+      .color-options { grid-template-columns: repeat(4, 1fr); }
+      .datetime-layout { grid-template-columns: 1fr; }
+      .order-bar { padding: 14px 20px; flex-wrap: wrap; gap: 10px; }
+      #wkw-timecode { right: 30px; }
+      #film-counter { left: 30px; }
+      /* Checkout */
+      .checkout-layout { grid-template-columns: 1fr; }
+      .checkout-left { padding: 32px 20px; border-right: none; border-bottom: 1px solid var(--border); }
+      .checkout-right { padding: 32px 20px; }
+      .co-row { grid-template-columns: 1fr; }
+      /* Cart drawer */
+      .cart-drawer { width: 100vw; }
+      /* Success */
+      .success-details { padding: 20px; }
+      /* Spend bar */
+      .spend-bar { left: 20px; right: 20px; padding: 0 20px; }
+      .spend-bar-inner { gap: 12px; }
+      .spend-bar-text { font-size: 9px; }
+    }
+
+    @media (max-width: 480px) {
+      .film-edge { display: none; }
+      main { padding-left: 0; padding-right: 0; }
+      nav { left: 0; right: 0; padding: 14px 16px; }
+      .size-inch { font-size: 32px; }
+      .time-slots { grid-template-columns: 1fr; }
+      .order-bar { left: 0; right: 0; bottom: 0; border-radius: 0; }
+      .cart-drawer { width: 100vw; }
+      /* Spend bar full width on mobile */
+      .spend-bar { left: 0; right: 0; padding: 0 16px; }
+      .spend-reward { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Film Edges ── -->
+  <div class="film-edge film-edge-left" aria-hidden="true">
+    <div class="sprocket-strip" id="sprocketL">
+      <!-- holes generated by JS -->
+    </div>
+  </div>
+  <div class="film-edge film-edge-right" aria-hidden="true">
+    <div class="sprocket-strip" id="sprocketR"></div>
+  </div>
+
+  <!-- ── Film Counter ── -->
+  <div id="film-counter" aria-hidden="true">
+    <div id="frame-label">FRAME 0001</div>
+    <div class="frame-bar"><div class="frame-bar-fill" id="frameFill" style="width:0%"></div></div>
+  </div>
+
+  <!-- ── Timecode ── -->
+  <div id="wkw-timecode" aria-hidden="true">00:00:00:00</div>
+
+  <!-- ── Navigation ── -->
+  <nav>
+    <a href="index.html" class="nav-back">返回首頁</a>
+    <div class="nav-step-indicator" id="navStepLabel">
+      Step <span id="navStepNum">1</span> of 4
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <img src="images/logo.png" alt="KASS" style="height:22px; filter:invert(1) brightness(0.85);" />
+      <!-- Cart nav button -->
+      <button class="btn-cart-icon" id="navCartBtn" onclick="openCart()" style="position:relative;">
+        🛒
+        <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--grey);">購物車</span>
+        <span class="cart-badge" id="navCartBadge">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── Progress bar ── -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:20%"></div>
+  </div>
+
+  <main>
+
+    <!-- ════════════════════════════════════════
+         STEP 1 — 取貨方式
+    ════════════════════════════════════════ -->
+    <div class="step-panel active" id="step1">
+      <div class="step-header">
+        <div>
+          <p class="step-num">Step 01 · How would you like to receive it?</p>
+          <h1 class="step-title">Pickup<br />or <span>delivery?</span></h1>
+          <p class="step-subtitle">選擇取貨方式。<br />外送由 Lalamove 即時配送，西門町附近約 30 分鐘送達。</p>
+        </div>
+        <div class="step-count-label">
+          <strong>2</strong>
+          options
+        </div>
+      </div>
+      <div class="category-grid">
+        <div class="category-card" onclick="selectDelivery('pickup')">
+          <p class="cat-number">Option 01</p>
+          <h2 class="cat-title">
+            <span class="the">Self</span>
+            Pickup
+          </h2>
+          <p class="cat-sub">KASS 西門町門市自取<br />選好日期到店取件，零等待。</p>
+          <div class="cat-arrow">→</div>
+        </div>
+        <div class="category-card" onclick="selectDelivery('delivery')">
+          <p class="cat-number">Option 02</p>
+          <h2 class="cat-title">
+            <span class="the" style="color:var(--amber);">Door</span>
+            Delivery
+          </h2>
+          <p class="cat-sub">Lalamove 即時外送<br />填入地址，運費於結帳確認。</p>
+          <div class="cat-arrow" style="border-color:rgba(200,137,74,0.3); color:var(--amber);">→</div>
+        </div>
+      </div>
+
+      <!-- Delivery address block — shows when delivery selected -->
+      <div class="delivery-address-block" id="deliveryAddressBlock">
+        <p class="addr-title">外送地址 · Delivery Address</p>
+        <div class="addr-notice">
+          <span class="addr-notice-icon">🚗</span>
+          <div class="addr-notice-text">
+            外送服務由 <strong>Lalamove</strong> 提供，目前服務範圍：台北市、新北市。<br />
+            運費依距離即時計算，將於結帳頁顯示確認後收費。<br />
+            <strong>預計時間：30–60 分鐘</strong>（依實際路況）
+          </div>
+        </div>
+        <div class="addr-row">
+          <div class="addr-field">
+            <label class="addr-label">縣市 City</label>
+            <input class="addr-input" id="addrCity" placeholder="台北市" autocomplete="address-level1" />
+          </div>
+          <div class="addr-field">
+            <label class="addr-label">區域 District</label>
+            <input class="addr-input" id="addrDistrict" placeholder="中正區" autocomplete="address-level2" />
+          </div>
+        </div>
+        <div class="addr-field">
+          <label class="addr-label">街道地址 Street Address</label>
+          <input class="addr-input" id="addrStreet" placeholder="忠孝東路一段 100 號 3F" autocomplete="street-address" />
+        </div>
+        <div class="addr-field">
+          <label class="addr-label">樓層 / 備注 Floor / Note</label>
+          <input class="addr-input" id="addrNote" placeholder="3 樓、電梯口交貨…" />
+        </div>
+        <div class="delivery-fee-preview">
+          <div>
+            <div class="dfp-label">預估運費 Est. Fee</div>
+            <div class="dfp-note">填入地址後由 Lalamove 試算</div>
+          </div>
+          <div>
+            <div class="dfp-val" id="deliveryFeeVal">待確認</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         STEP 2 — 選日期 & 時段（共用，所有品項共享）
+    ════════════════════════════════════════ -->
+    <div class="step-panel" id="step2">
+      <div class="step-header">
+        <div>
+          <p class="step-num">Step 02 · Choose Your Date & Time</p>
+          <h2 class="step-title">When<br />would you <span>like it?</span></h2>
+          <p class="step-subtitle" id="step2DateSub">選好日期與時段。<br />這個時間對本次所有品項通用，繼續加購不需重選。</p>
+        </div>
+        <div class="step-count-label">
+          <div id="selectedDateLabel" style="font-size:11px; color:var(--white); font-weight:600; letter-spacing:1px; line-height:1.8;">
+            尚未選擇
+          </div>
+        </div>
+      </div>
+      <div class="datetime-layout">
+        <div class="dt-section">
+          <p class="dt-label">選擇日期 · <span>Date</span></p>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <button onclick="prevMonth()" style="background:none;border:1px solid var(--border);color:var(--grey);padding:6px 14px;cursor:pointer;font-size:14px;">←</button>
+            <span id="calMonthLabel" style="font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--white);"></span>
+            <button onclick="nextMonth()" style="background:none;border:1px solid var(--border);color:var(--grey);padding:6px 14px;cursor:pointer;font-size:14px;">→</button>
+          </div>
+          <div class="date-grid-header">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div class="date-grid" id="dateGrid"></div>
+        </div>
+        <div class="dt-section">
+          <p class="dt-label" id="timeSlotLabel">選擇時段 · <span>Time Slot</span></p>
+          <div class="time-slots" id="timeSlots">
+            <div class="time-slot" onclick="selectTime(this, '13:00')">13:00</div>
+            <div class="time-slot" onclick="selectTime(this, '14:00')">14:00</div>
+            <div class="time-slot" onclick="selectTime(this, '15:00')">15:00</div>
+            <div class="time-slot" onclick="selectTime(this, '16:00')">16:00</div>
+            <div class="time-slot" onclick="selectTime(this, '17:00')">17:00</div>
+            <div class="time-slot" onclick="selectTime(this, '18:00')">18:00</div>
+          </div>
+          <!-- Location / method info -->
+          <div style="margin-top:28px; padding:20px; border:1px solid var(--border);" id="step2LocationBlock">
+            <p style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--grey);margin-bottom:10px;" id="step2LocationLabel">自取地址</p>
+            <p style="font-size:13px;color:var(--white);line-height:1.8;" id="step2LocationVal">KASS · Ximending<br /><span style="color:var(--grey);font-size:11px;font-family:'Noto Sans TC';font-weight:300;">台北市萬華區 西門町</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         STEP 3 — 選商品（蛋糕 or 禮盒 → 口味 → 尺寸 → 袋色）
+    ════════════════════════════════════════ -->
+    <div class="step-panel" id="step3">
+      <div class="step-header">
+        <div>
+          <p class="step-num" id="step3Num">Step 03 · Choose Your Product</p>
+          <h2 class="step-title" id="step3Title">What would<br />you like<br />to <span>order?</span></h2>
+          <p class="step-subtitle" id="step3Sub">選擇品項，加入購物車後可繼續加購。</p>
+        </div>
+        <div class="step-count-label">
+          <strong id="step3Count">3</strong>
+          <span id="step3CountLabel">flavours</span>
+        </div>
+      </div>
+
+      <!-- 3A: Category selection -->
+      <div id="catPanel" class="sub-panel active">
+        <div class="category-grid">
+          <div class="category-card" onclick="selectCategory('cake')">
+            <p class="cat-number">Category 01</p>
+            <h2 class="cat-title">
+              <span class="the">The</span>
+              Cake
+            </h2>
+            <p class="cat-sub">4吋 / 6吋 / 9吋 · 三種口味<br />每一個尺寸，都是一個故事。</p>
+            <div class="cat-arrow">→</div>
+          </div>
+          <div class="category-card" onclick="selectCategory('gift')">
+            <p class="cat-number">Category 02</p>
+            <h2 class="cat-title">
+              <span class="the" style="color:var(--amber);">The</span>
+              Gift Box
+            </h2>
+            <p class="cat-sub">可麗露禮盒 · 肉桂卷禮盒<br />送給在乎的人，或送給自己。</p>
+            <div class="cat-arrow" style="border-color:rgba(200,137,74,0.3); color:var(--amber);">→</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3B: Cake flavour grid -->
+      <div id="flavourPanel" class="sub-panel">
+        <div style="padding:20px 40px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px;">
+          <button onclick="backToCategory()" style="background:none;border:1px solid var(--border);color:var(--grey);padding:8px 16px;cursor:pointer;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.borderColor='white';this.style.color='white'" onmouseout="this.style.borderColor='';this.style.color=''">← 返回</button>
+          <span style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--grey);">CAKE · 選擇口味</span>
+        </div>
+        <div class="flavour-grid" id="flavourGrid"><!-- JS --></div>
+      </div>
+
+      <!-- 3C: Gift box grid -->
+      <div id="giftPanel" class="sub-panel">
+        <div style="padding:20px 40px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px;">
+          <button onclick="backToCategory()" style="background:none;border:1px solid var(--border);color:var(--grey);padding:8px 16px;cursor:pointer;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.borderColor='white';this.style.color='white'" onmouseout="this.style.borderColor='';this.style.color=''">← 返回</button>
+          <span style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--grey);">GIFT BOX · 選擇禮盒</span>
+        </div>
+        <div class="giftbox-grid" id="giftGrid"><!-- JS --></div>
+      </div>
+
+      <!-- 3D: Size selection (cake only) -->
+      <div id="sizePanel" class="sub-panel">
+        <div style="padding:20px 40px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <button onclick="backToFlavour()" style="background:none;border:1px solid var(--border);color:var(--grey);padding:8px 16px;cursor:pointer;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.borderColor='white';this.style.color='white'" onmouseout="this.style.borderColor='';this.style.color=''">← 返回</button>
+            <span style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--grey);">選擇尺寸</span>
+          </div>
+          <div id="selectedFlavourLabel" style="text-align:right;"></div>
+        </div>
+        <div class="size-grid">
+          <div class="size-card" onclick="selectSize(4)" id="size4">
+            <div class="size-visual">
+              <div class="size-circle" style="width:40px;height:40px;"></div>
+              <div class="size-circle" style="width:60px;height:60px;"></div>
+              <div class="size-circle" style="width:80px;height:80px;"></div>
+            </div>
+            <div class="size-inch">4</div>
+            <div class="size-unit">吋 · Inch</div>
+            <div class="size-serves">約 2–4 人份</div>
+            <div class="size-price" id="price4">—</div>
+          </div>
+          <div class="size-card" onclick="selectSize(6)" id="size6">
+            <div class="size-visual">
+              <div class="size-circle" style="width:50px;height:50px;"></div>
+              <div class="size-circle" style="width:65px;height:65px;"></div>
+              <div class="size-circle" style="width:80px;height:80px;"></div>
+            </div>
+            <div class="size-inch">6</div>
+            <div class="size-unit">吋 · Inch</div>
+            <div class="size-serves">約 6–8 人份</div>
+            <div class="size-price" id="price6">—</div>
+          </div>
+          <div class="size-card" onclick="selectSize(9)" id="size9">
+            <div class="size-visual">
+              <div class="size-circle" style="width:60px;height:60px;"></div>
+              <div class="size-circle" style="width:72px;height:72px;"></div>
+              <div class="size-circle" style="width:80px;height:80px;"></div>
+            </div>
+            <div class="size-inch">9</div>
+            <div class="size-unit">吋 · Inch</div>
+            <div class="size-serves">約 12–16 人份</div>
+            <div class="size-price" id="price9">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3E: Bag colour (cake only) -->
+      <div id="bagPanel" class="sub-panel">
+        <div style="padding:20px 40px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px;">
+          <button onclick="backToSize()" style="background:none;border:1px solid var(--border);color:var(--grey);padding:8px 16px;cursor:pointer;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.borderColor='white';this.style.color='white'" onmouseout="this.style.borderColor='';this.style.color=''">← 返回</button>
+          <span style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--grey);">選擇紙袋顏色</span>
+        </div>
+        <div class="packaging-layout">
+          <div class="packaging-left">
+            <p class="pkg-section-title">紙袋顏色 · <span>Bag Colour</span></p>
+            <div class="color-options" id="bagColors">
+              <div class="color-swatch selected" data-color="#1a1714" data-name="Noir" onclick="selectBag(this)">
+                <div class="swatch-color" style="background:#1a1714; border:1px solid rgba(255,255,255,0.15);"></div>
+                <div class="swatch-label">Noir</div>
+              </div>
+              <div class="color-swatch" data-color="#DD95B4" data-name="Rose" onclick="selectBag(this)">
+                <div class="swatch-color" style="background:#DD95B4;"></div>
+                <div class="swatch-label">Rose</div>
+              </div>
+              <div class="color-swatch" data-color="#F5F0EB" data-name="Blanc" onclick="selectBag(this)">
+                <div class="swatch-color" style="background:#F5F0EB;"></div>
+                <div class="swatch-label">Blanc</div>
+              </div>
+              <div class="color-swatch" data-color="#C8894A" data-name="Amber" onclick="selectBag(this)">
+                <div class="swatch-color" style="background:#C8894A;"></div>
+                <div class="swatch-label">Amber</div>
+              </div>
+            </div>
+          </div>
+          <div class="packaging-right">
+            <div class="pkg-preview">
+              <div class="preview-bag">
+                <div class="preview-bag-handle"></div>
+                <div class="preview-bag-body" id="previewBag" style="background-color:#1a1714;">
+                  <div class="preview-bag-logo">KASS</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /step3 -->
+
+    <!-- ════════════════════════════════════════
+         STEP 4 — 結帳
+    ════════════════════════════════════════ -->
+    <div class="step-panel" id="step4">
+      <div class="step-header">
+        <div>
+          <p class="step-num">Step 04 · Confirm Your Order</p>
+          <h2 class="step-title">Almost<br /><span>there.</span></h2>
+          <p class="step-subtitle" id="step4Sub">確認你的訂單，填寫資料。</p>
+        </div>
+      </div>
+      <div class="checkout-layout">
+
+        <!-- Left: form + payment -->
+        <div class="checkout-left">
+
+          <!-- ① 聯絡資料 -->
+          <p class="checkout-section-title" id="coInfoTitle">聯絡資料 · <span>Your Info</span></p>
+          <div class="co-row">
+            <div class="co-field">
+              <label class="co-label">姓名 Name</label>
+              <input class="co-input" type="text" id="coName" placeholder="Your name" autocomplete="name" />
+            </div>
+            <div class="co-field">
+              <label class="co-label">電話 Phone</label>
+              <input class="co-input" type="tel" id="coPhone" placeholder="09xx-xxx-xxx" autocomplete="tel" />
+            </div>
+          </div>
+          <div class="co-field">
+            <label class="co-label">電子信箱 Email</label>
+            <input class="co-input" type="email" id="coEmail" placeholder="hello@kass.tw" autocomplete="email" />
+          </div>
+
+          <!-- Delivery address summary -->
+          <div id="coDeliveryBlock" style="display:none; margin-bottom:20px; padding:16px; border:1px solid rgba(200,137,74,0.25); background:rgba(200,137,74,0.04);">
+            <div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--amber);margin-bottom:8px;">外送地址</div>
+            <div id="coDeliveryAddr" style="font-size:13px;color:var(--white);line-height:1.8;font-family:'Noto Sans TC';"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+              <span style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--grey);">預估運費</span>
+              <span style="font-family:'Inter',monospace;font-size:13px;font-weight:600;color:var(--amber);" id="coDeliveryFee">待結帳確認</span>
+            </div>
+          </div>
+
+          <div class="co-field">
+            <label class="co-label">備注 Notes</label>
+            <textarea class="co-input co-textarea" id="coNote" placeholder="特殊需求、過敏提醒、贈禮對象…"></textarea>
+          </div>
+
+          <div class="co-pickup-block" id="coPickupBlock">
+            <div class="co-pickup-label" id="coPickupLabelText">取件時間</div>
+            <div class="co-pickup-val" id="coPickupVal">尚未設定</div>
+          </div>
+
+          <!-- ② 付款方式 -->
+          <p class="checkout-section-title" style="margin-top:36px;">付款方式 · <span>Payment</span></p>
+
+          <!-- 沙盒測試提示（上線後移除） -->
+          <div class="tp-sandbox-banner" id="tpSandboxBanner">
+            🧪 沙盒測試模式 · Sandbox Mode
+          </div>
+
+          <!-- 付款方式 tabs -->
+          <div class="pay-method-tabs">
+            <button class="pay-method-tab active" id="tabCard" onclick="switchPayMethod('card')">
+              💳 信用卡
+            </button>
+            <button class="pay-method-tab" id="tabApple" onclick="switchPayMethod('apple')" style="display:none;">
+               Apple Pay
+            </button>
+            <button class="pay-method-tab" id="tabGoogle" onclick="switchPayMethod('google')" style="display:none;">
+              Google Pay
+            </button>
+          </div>
+
+          <!-- 信用卡付款區塊 -->
+          <div id="payPanelCard">
+            <!-- 卡別 icons -->
+            <div class="tp-card-brands">
+              <span class="tp-brand-text">接受</span>
+              <img class="tp-brand-icon active" id="brandVisa"
+                src="https://cdn.jsdelivr.net/gh/twbs/icons/icons/credit-card-2-front.svg"
+                alt="VISA" title="VISA"
+                style="height:18px;opacity:0.5;filter:invert(1);" />
+              <span style="font-size:9px;letter-spacing:1px;color:rgba(255,255,255,0.4);">VISA</span>
+              <span style="font-size:9px;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-left:8px;">Mastercard</span>
+              <span style="font-size:9px;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-left:8px;">JCB</span>
+            </div>
+
+            <!-- 卡號 -->
+            <div class="tp-field-wrap">
+              <label class="tp-field-label">卡號 Card Number</label>
+              <div class="tp-field" id="tpCardNumber"></div>
+            </div>
+
+            <!-- 到期日 + CVV -->
+            <div class="tp-card-row">
+              <div class="tp-field-wrap">
+                <label class="tp-field-label">到期日 Expiry</label>
+                <div class="tp-field" id="tpExpiry"></div>
+              </div>
+              <div class="tp-field-wrap">
+                <label class="tp-field-label">安全碼 CVV</label>
+                <div class="tp-field" id="tpCcv"></div>
+              </div>
+            </div>
+
+            <!-- 安全說明 -->
+            <div class="tp-secure-notice">
+              <span class="tp-secure-icon">🔒</span>
+              <div class="tp-secure-text">
+                卡號由 <strong>TapPay PCI-DSS Level 1</strong> 加密處理，KASS 不儲存任何卡片資訊。
+              </div>
+            </div>
+
+            <!-- 付款按鈕 -->
+            <button class="co-submit-btn" id="coSubmitBtn" onclick="submitCheckout()">
+              立即付款 · NT$ <span id="submitTotalAmt">0</span>
+            </button>
+            <p class="co-note" id="tpCardNote">請輸入卡片資訊後付款</p>
+          </div>
+
+          <!-- Apple Pay 付款區塊 -->
+          <div id="payPanelApple" style="display:none;">
+            <div class="tp-wallet-section">
+              <button class="tp-wallet-btn apple" id="applePayBtn" onclick="payWithApplePay()">
+                 Pay
+              </button>
+            </div>
+            <div class="tp-secure-notice">
+              <span class="tp-secure-icon">🔒</span>
+              <div class="tp-secure-text">使用 Apple Pay 付款，透過 Face ID / Touch ID 授權，安全便利。</div>
+            </div>
+          </div>
+
+          <!-- Google Pay 付款區塊 -->
+          <div id="payPanelGoogle" style="display:none;">
+            <div class="tp-wallet-section">
+              <button class="tp-wallet-btn google" id="googlePayBtn" onclick="payWithGooglePay()">
+                <span style="font-size:16px;">G</span> Pay
+              </button>
+            </div>
+            <div class="tp-secure-notice">
+              <span class="tp-secure-icon">🔒</span>
+              <div class="tp-secure-text">使用 Google Pay 快速完成付款，無需輸入卡號。</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: order review -->
+        <div class="checkout-right">
+          <p class="checkout-section-title">訂單明細 · <span>Order Review</span></p>
+          <div id="coItemsList"></div>
+          <div class="co-total-row">
+            <span class="co-total-label">訂單總計</span>
+            <span class="co-total-amount" id="coTotalAmount">NT$ 0</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         STEP 7 — 成功
+    ════════════════════════════════════════ -->
+    <div class="order-success" id="orderSuccess">
+      <img src="images/logo.png" alt="KASS" class="success-logo" />
+      <div class="success-order-num" id="successOrderNum">ORDER #KASS-0001</div>
+      <h2 class="success-title">Order <span>Received.</span></h2>
+      <p class="success-quote">
+        "Happiness is only real when shared."<br/>
+        <span style="font-size:0.7em;letter-spacing:2px;color:rgba(255,255,255,0.3);">— Into the Wild, 2007</span>
+      </p>
+      <div class="success-details" id="successDetails">
+        <!-- Rendered by JS -->
+      </div>
+      <a href="index.html" class="success-back-btn">← 回到首頁</a>
+    </div>
+
+  </main><!-- /main -->
+
+  <!-- ── Spend Progress Bar (top, below nav) ── -->
+  <div class="spend-bar" id="spendBar">
+    <div class="spend-bar-inner">
+      <div class="spend-bar-text" id="spendBarText">購物車空的</div>
+      <div class="spend-track" id="spendTrack">
+        <div class="spend-fill" id="spendFill" style="width:0%"></div>
+        <!-- Milestones rendered by JS -->
+      </div>
+      <div class="spend-reward" id="spendReward">NT$ 0</div>
+    </div>
+    <!-- Upsell chips -->
+    <div class="spend-upsell" id="spendUpsell"></div>
+  </div>
+
+  <!-- ── Order Bar ── -->
+  <div class="order-bar" id="orderBar">
+    <div class="order-summary-text" id="orderSummaryText">
+      選擇商品後，這裡會顯示你的訂單摘要。
+    </div>
+    <div class="order-total" id="orderTotal"></div>
+    <button class="btn-cart-icon" onclick="openCart()" id="cartIconBar" style="display:none;">
+      🛒
+      <span class="cart-badge show" id="barCartBadge">0</span>
+    </button>
+    <button class="btn-next" id="btnNext" onclick="nextStep()">
+      Next Step →
+    </button>
+  </div>
+
+  <!-- ══ CART OVERLAY ══ -->
+  <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+
+  <!-- ══ CART DRAWER ══ -->
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <div>
+        <div class="cart-header-title">購物車 · Cart</div>
+        <div class="cart-count-label" id="cartCountLabel">0 件商品</div>
+      </div>
+      <button class="cart-close" onclick="closeCart()">✕</button>
+    </div>
+
+    <!-- Spend progress block inside drawer -->
+    <div class="cart-spend-block" id="cartSpendBlock" style="display:none;">
+      <div class="cart-spend-label" id="cartSpendLabel">—</div>
+      <div class="cart-spend-track">
+        <div class="cart-spend-fill" id="cartSpendFill" style="width:0%"></div>
+      </div>
+      <div class="cart-spend-milestones">
+        <span id="ms800">NT$ 800</span>
+        <span id="ms1500">NT$ 1,500</span>
+        <span id="ms2500">NT$ 2,500</span>
+      </div>
+    </div>
+
+    <!-- Upsell chips inside drawer -->
+    <div class="cart-upsell-row" id="cartUpsellRow" style="display:none;"></div>
+
+    <div class="cart-body" id="cartBody">
+      <!-- Items rendered by JS -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-subtotal">
+        <span class="cart-subtotal-label">小計 Subtotal</span>
+        <span class="cart-subtotal-amount" id="cartSubtotal">NT$ 0</span>
+      </div>
+      <button class="cart-add-more" onclick="addMoreItem()">+ 繼續選購</button>
+      <button class="cart-checkout-btn" id="cartCheckoutBtn" onclick="goCheckout()">
+        前往結帳 →
+      </button>
+      <p class="cart-notice" id="cartNotice">KASS 西門町自取 · 繼續選購不需重新選擇時間</p>
+    </div>
+  </div>
+
+  <!-- ══ TapPay Processing Overlay ══ -->
+  <div class="tp-processing-overlay" id="tpProcessingOverlay">
+    <div class="tp-processing-spinner"></div>
+    <div class="tp-processing-text" id="tpProcessingText">付款處理中</div>
+    <div class="tp-processing-sub">請勿關閉視窗或重新整理</div>
+  </div>
+
+  <!-- TapPay SDK -->
+  <script src="https://js.tappaysdk.com/sdk/tpdirect/v5.18.0"></script>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════════
+     FILM STRIP — sprocket holes
+  ═══════════════════════════════════════════════════════════════ */
+  function buildSprockets() {
+    ['sprocketL','sprocketR'].forEach(id => {
+      const strip = document.getElementById(id);
+      if (!strip) return;
+      strip.innerHTML = '';
+      const count = Math.ceil(window.innerHeight / 52) + 4;
+      for (let i = 0; i < count; i++) {
+        const h = document.createElement('div');
+        h.className = 'sprocket-hole';
+        strip.appendChild(h);
+      }
+    });
+  }
+  buildSprockets();
+  window.addEventListener('resize', buildSprockets);
+
+  /* ── Film frame counter ── */
+  let frameNum = 1;
+  function updateFrameCounter() {
+    const progress = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) || 0;
+    frameNum = Math.floor(1 + progress * 9998);
+    const el = document.getElementById('frame-label');
+    if (el) el.textContent = 'FRAME ' + String(frameNum).padStart(4, '0');
+    const fill = document.getElementById('frameFill');
+    if (fill) fill.style.width = (progress * 100) + '%';
+  }
+  window.addEventListener('scroll', updateFrameCounter, { passive: true });
+
+  /* ── Timecode ── */
+  function updateTimecode() {
+    const now = new Date();
+    const h  = String(now.getHours()).padStart(2,'0');
+    const m  = String(now.getMinutes()).padStart(2,'0');
+    const s  = String(now.getSeconds()).padStart(2,'0');
+    const f  = String(Math.floor(now.getMilliseconds() / 40)).padStart(2,'0');
+    const el = document.getElementById('wkw-timecode');
+    if (el) el.textContent = `${h}:${m}:${s}:${f}`;
+  }
+  setInterval(updateTimecode, 40);
+  updateTimecode();
+
+  /* ═══════════════════════════════════════════════════════════════
+     PRODUCT DATA
+  ═══════════════════════════════════════════════════════════════ */
+  const CAKES = [
+    {
+      id: 'chestnut',
+      the: 'THE',
+      name: 'Chestnut Cake',
+      zh: '栗子蛋糕',
+      desc: '焦糖栗泥層疊，秋意漫延',
+      img: 'images/product-chestnut-cake.jpg',
+      prices: { 4: 780, 6: 1080, 9: 1480 },
+      available: [4, 6, 9]
+    },
+    {
+      id: 'strawberry',
+      the: 'THE',
+      name: 'Strawberry Cake',
+      zh: '草莓蛋糕',
+      desc: '鮮奶油與草莓的完美平衡',
+      img: 'images/product-strawberry-cake.jpg',
+      prices: { 4: 780, 6: 1080, 9: 1480 },
+      available: [4, 6, 9]
+    },
+    {
+      id: 'taro',
+      the: 'THE',
+      name: 'Taro Cake',
+      zh: '芋頭蛋糕',
+      desc: '芋泥層層堆疊，萬華的滋味',
+      img: 'images/product-taro-cake.jpg',
+      prices: { 4: 780, 6: 1080, 9: 1480 },
+      available: [4, 6, 9]
+    }
+  ];
+
+  const GIFTS = [
+    {
+      id: 'canele-box',
+      the: 'THE',
+      name: 'Canelé Box',
+      zh: '可麗露禮盒',
+      spec: '四入裝',
+      desc: '銅模現烤，法國波爾多的傳承',
+      img: 'images/product-canele.jpg',
+      price: 320
+    },
+    {
+      id: 'cinnamon-box',
+      the: 'THE',
+      name: 'Cinnamon Roll Box',
+      zh: '肉桂捲禮盒',
+      spec: '三入裝',
+      desc: '手工整型，焦糖光澤釉面',
+      img: 'images/product-cinnamon.jpg',
+      price: 500
+    }
+  ];
+
+  /* ═══════════════════════════════════════════════════════════════
+     DELIVERY METHOD
+  ═══════════════════════════════════════════════════════════════ */
+  // Called when user taps Self-Pickup or Door Delivery card
+  function selectDelivery(method) {
+    state.deliveryMethod = method;
+
+    const addrBlock = document.getElementById('deliveryAddressBlock');
+    if (method === 'delivery') {
+      addrBlock.classList.add('show');
+    } else {
+      addrBlock.classList.remove('show');
+    }
+
+    // Update step2 location info block
+    const locLabel = document.getElementById('step2LocationLabel');
+    const locVal   = document.getElementById('step2LocationVal');
+    if (method === 'delivery') {
+      if (locLabel) locLabel.textContent = '外送地址';
+      if (locVal)   locVal.innerHTML = '<span style="color:var(--amber);font-size:12px;font-family:\'Noto Sans TC\';">填入後於結帳確認運費</span>';
+    } else {
+      if (locLabel) locLabel.textContent = '自取地址';
+      if (locVal)   locVal.innerHTML = 'KASS · Ximending<br/><span style="color:var(--grey);font-size:11px;font-family:\'Noto Sans TC\';font-weight:300;">台北市萬華區 西門町</span>';
+    }
+
+    // If delivery, validate address before proceeding
+    if (method === 'delivery') {
+      // Scroll to address form
+      setTimeout(() => addrBlock.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      // Show a "confirm address → next" button feel — move to step2
+      setTimeout(() => goToStep(2), 400);
+    } else {
+      goToStep(2);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CATEGORY SELECTION (step 3 — catPanel)
+  ═══════════════════════════════════════════════════════════════ */
+  function selectCategory(cat) {
+    state.category = cat;
+    state.flavourId = null;
+    state.giftId    = null;
+    state.size      = null;
+
+    // Show appropriate sub-panel inside step3
+    showStep3Panel(cat === 'cake' ? 'flavourPanel' : 'giftPanel');
+    updateOrderBar();
+  }
+
+  function backToCategory() {
+    state.flavourId = null;
+    state.giftId    = null;
+    state.size      = null;
+    showStep3Panel('catPanel');
+    updateOrderBar();
+  }
+
+  function backToFlavour() {
+    state.size = null;
+    showStep3Panel('flavourPanel');
+    updateOrderBar();
+  }
+
+  function backToSize() {
+    showStep3Panel('sizePanel');
+    updateOrderBar();
+  }
+
+  // Show a sub-panel inside step3; hide all others
+  function showStep3Panel(panelId) {
+    ['catPanel','flavourPanel','giftPanel','sizePanel','bagPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('active', id === panelId);
+    });
+    state.step3Panel = panelId;
+    updateStep3Header();
+  }
+
+  function updateStep3Header() {
+    const panel = state.step3Panel || 'catPanel';
+    const numEl  = document.getElementById('step3Num');
+    const titleEl = document.getElementById('step3Title');
+    const subEl  = document.getElementById('step3Sub');
+    const countEl = document.getElementById('step3Count');
+    const countLbl = document.getElementById('step3CountLabel');
+
+    if (panel === 'catPanel') {
+      if (numEl) numEl.textContent = 'Step 03 · Choose Your Product';
+      if (titleEl) titleEl.innerHTML = 'What would<br />you like<br />to <span>order?</span>';
+      if (subEl) subEl.textContent = '選擇品項，加入購物車後可繼續加購。';
+      if (countEl) countEl.textContent = '2';
+      if (countLbl) countLbl.textContent = 'categories';
+    } else if (panel === 'flavourPanel') {
+      if (numEl) numEl.textContent = 'Step 03 · Choose Your Flavour';
+      if (titleEl) titleEl.innerHTML = 'Choose<br />your <span>flavour.</span>';
+      if (subEl) subEl.textContent = '三種口味，各有各的個性。';
+      if (countEl) countEl.textContent = '3';
+      if (countLbl) countLbl.textContent = 'flavours';
+    } else if (panel === 'giftPanel') {
+      if (numEl) numEl.textContent = 'Step 03 · Choose Your Gift Box';
+      if (titleEl) titleEl.innerHTML = 'Choose<br />your <span>gift box.</span>';
+      if (subEl) subEl.textContent = '兩種禮盒，送給在乎的人。';
+      if (countEl) countEl.textContent = '2';
+      if (countLbl) countLbl.textContent = 'gift boxes';
+    } else if (panel === 'sizePanel') {
+      if (numEl) numEl.textContent = 'Step 03 · Choose Your Size';
+      if (titleEl) titleEl.innerHTML = 'Choose<br />your <span>size.</span>';
+      if (subEl) subEl.textContent = '三種尺寸，適合不同場合。';
+      if (countEl) countEl.textContent = '3';
+      if (countLbl) countLbl.textContent = 'sizes';
+    } else if (panel === 'bagPanel') {
+      if (numEl) numEl.textContent = 'Step 03 · Choose Bag Colour';
+      if (titleEl) titleEl.innerHTML = 'Your <span>bag colour.</span>';
+      if (subEl) subEl.textContent = '選一個屬於你的提袋顏色。';
+      if (countEl) countEl.textContent = '4';
+      if (countLbl) countLbl.textContent = 'colours';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CART — localStorage persistence
+  ═══════════════════════════════════════════════════════════════ */
+  let cart = JSON.parse(localStorage.getItem('kass_cart') || '[]');
+
+  function saveCart() {
+    localStorage.setItem('kass_cart', JSON.stringify(cart));
+  }
+
+  function cartTotal() {
+    return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  }
+
+  function cartCount() {
+    return cart.reduce((sum, item) => sum + item.qty, 0);
+  }
+
+  function updateCartBadges() {
+    const count = cartCount();
+    const show = count > 0;
+    ['navCartBadge','barCartBadge'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = count;
+      el.classList.toggle('show', show);
+    });
+    // Show cart icon in order bar when cart has items
+    const barIcon = document.getElementById('cartIconBar');
+    if (barIcon) barIcon.style.display = show ? 'flex' : 'none';
+    // Update cart count label
+    const label = document.getElementById('cartCountLabel');
+    if (label) label.textContent = count + ' 件商品';
+    // Enable/disable checkout
+    const checkoutBtn = document.getElementById('cartCheckoutBtn');
+    if (checkoutBtn) checkoutBtn.disabled = count === 0;
+  }
+
+  function addToCart() {
+    // Build item from current state
+    let item = null;
+
+    if (state.category === 'cake') {
+      const cake = CAKES.find(c => c.id === state.flavourId);
+      if (!cake || !state.size) {
+        console.warn('[KASS] addToCart: cake or size missing', state);
+        return;
+      }
+      item = {
+        id: Date.now() + '_' + Math.random().toString(36).slice(2),
+        type: 'cake',
+        productId: cake.id,
+        name: cake.name,
+        zh: cake.zh,
+        img: cake.img,
+        size: state.size + '吋',
+        bagColor: state.bagColor,
+        bagName: state.bagName,
+        boxColor: null,
+        boxName: null,
+        date: state.date,   // shared date from step 2
+        time: state.time,   // shared time from step 2
+        price: cake.prices[state.size],
+        qty: 1
+      };
+    } else if (state.category === 'gift') {
+      const gift = GIFTS.find(g => g.id === state.giftId);
+      if (!gift) {
+        console.warn('[KASS] addToCart: gift missing', state);
+        return;
+      }
+      item = {
+        id: Date.now() + '_' + Math.random().toString(36).slice(2),
+        type: 'gift',
+        productId: gift.id,
+        name: gift.name,
+        zh: gift.zh,
+        spec: gift.spec,
+        img: gift.img,
+        // Gift has no bag/box colour selection
+        bagColor: '#1a1714', bagName: '—',
+        boxColor: '#1a1714', boxName: '—',
+        date: state.date,
+        time: state.time,
+        price: gift.price,
+        qty: 1
+      };
+    } else {
+      console.warn('[KASS] addToCart: unknown category', state.category);
+      return;
+    }
+
+    if (item) {
+      cart.push(item);
+      saveCart();
+      updateCartBadges();
+      renderCartDrawer();
+      updateSpendBar();
+      // Open cart drawer to show what's been added
+      openCart();
+      // Reset product state (keep date/time for next item)
+      state.category   = null;
+      state.flavourId  = null;
+      state.giftId     = null;
+      state.size       = null;
+      state.step3Panel = 'catPanel';
+      state.bagColor   = '#1a1714'; state.bagName = 'Noir';
+    }
+  }
+
+  function removeFromCart(itemId) {
+    cart = cart.filter(i => i.id !== itemId);
+    saveCart();
+    updateCartBadges();
+    renderCartDrawer();
+    updateSpendBar();
+  }
+
+  function changeQty(itemId, delta) {
+    const item = cart.find(i => i.id === itemId);
+    if (!item) return;
+    item.qty = Math.max(1, item.qty + delta);
+    saveCart();
+    updateCartBadges();
+    renderCartDrawer();
+    updateSpendBar();
+  }
+
+  function renderCartDrawer() {
+    const body = document.getElementById('cartBody');
+    if (!body) return;
+    const subtotalEl = document.getElementById('cartSubtotal');
+    if (subtotalEl) subtotalEl.textContent = 'NT$ ' + cartTotal().toLocaleString();
+
+    if (cart.length === 0) {
+      body.innerHTML = `
+        <div class="cart-empty">
+          <img src="images/logo.png" alt="KASS" class="cart-empty-logo" />
+          <p>購物車是空的</p>
+          <p style="margin-top:8px;font-size:9px;color:rgba(255,255,255,0.2);">Empty Cart</p>
+        </div>`;
+      return;
+    }
+
+    // Shared pickup time header
+    const sharedTime = (state.date && state.time)
+      ? `${state.date}  ${state.time}`
+      : '時段未選擇（請返回步驟 2）';
+    const methodStr = state.deliveryMethod === 'delivery' ? '🚗 外送時間' : '📅 取件時間';
+    body.innerHTML = `<div class="cart-item-time">${methodStr} <span>${sharedTime}</span></div>`;
+
+    body.innerHTML += cart.map(item => {
+      const isGift = item.type === 'gift';
+      const itemTotal = (item.price * item.qty).toLocaleString();
+      const metaLine = isGift
+        ? `${item.zh} · ${item.spec}`
+        : `${item.zh} · ${item.size}`;
+      return `
+        <div class="cart-item" id="ci_${item.id}">
+          <img class="cart-item-img${isGift ? ' uk' : ''}"
+               src="${item.img}" alt="${item.name}" />
+          <div class="cart-item-info">
+            <div class="cart-item-the">THE</div>
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-meta">${metaLine}</div>
+            ${!isGift ? `
+            <div class="cart-item-pkg">
+              <span class="cart-item-swatch" style="background:${item.bagColor};" title="袋 ${item.bagName}"></span>
+              <span style="font-size:9px;color:var(--grey);margin-left:4px;letter-spacing:1px;">袋 ${item.bagName}</span>
+            </div>` : ''}
+          </div>
+          <div class="cart-item-right">
+            <div class="cart-item-price">NT$ ${itemTotal}</div>
+            <div class="cart-item-qty">
+              <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
+              <div class="qty-num">${item.qty}</div>
+              <button class="qty-btn" onclick="changeQty('${item.id}', +1)">+</button>
+            </div>
+            <button class="cart-item-del" onclick="removeFromCart('${item.id}')">移除</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function openCart() {
+    renderCartDrawer();
+    updateSpendBar();
+    // Update notice text
+    const notice = document.getElementById('cartNotice');
+    if (notice) {
+      notice.textContent = state.deliveryMethod === 'delivery'
+        ? 'Lalamove 外送 · 繼續加購不需重選時段'
+        : 'KASS 西門町自取 · 繼續加購不需重選時段';
+    }
+    document.getElementById('cartDrawer').classList.add('open');
+    document.getElementById('cartOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCart() {
+    document.getElementById('cartDrawer').classList.remove('open');
+    document.getElementById('cartOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function addMoreItem() {
+    closeCart();
+    // Reset product selection BUT keep date/time (user already chose when)
+    state.category = null;
+    state.flavourId = null;
+    state.giftId    = null;
+    state.size      = null;
+    state.step3Panel = 'catPanel';
+    state.bagColor  = '#1a1714'; state.bagName = 'Noir';
+    state.boxColor  = '#1a1714'; state.boxName = 'Noir';
+    // Deselect product UI
+    document.querySelectorAll('.flavour-poster, .giftbox-poster').forEach(p => p.classList.remove('selected'));
+    document.querySelectorAll('.size-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('#bagColors .color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.dataset.name === 'Noir');
+    });
+    // Show the category panel
+    showStep3Panel('catPanel');
+    // Go to step3 directly (date/time already selected, skip steps 1 & 2)
+    goToStep(3);
+  }
+
+  function goCheckout() {
+    closeCart();
+    renderCheckout();
+    // Show checkout step (step4 in new flow)
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step4').classList.add('active');
+    document.getElementById('orderBar').classList.remove('visible');
+    document.getElementById('progressFill').style.width = '100%';
+    const navLabel = document.getElementById('navStepLabel');
+    if (navLabel) navLabel.innerHTML = `Step <span id="navStepNum">4</span> of 4`;
+    // 更新付款按鈕金額
+    updateSubmitBtnAmount();
+    // 信用卡預設 disabled，等 TapPay 欄位填完才啟用
+    const submitBtn = document.getElementById('coSubmitBtn');
+    if (submitBtn) submitBtn.disabled = true;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Populate delivery address in checkout if delivery method chosen
+    const coDeliveryBlock = document.getElementById('coDeliveryBlock');
+    const coDeliveryAddr  = document.getElementById('coDeliveryAddr');
+    const coPickupLabelText = document.getElementById('coPickupLabelText');
+    if (state.deliveryMethod === 'delivery') {
+      const city     = document.getElementById('addrCity')?.value || '';
+      const district = document.getElementById('addrDistrict')?.value || '';
+      const street   = document.getElementById('addrStreet')?.value || '';
+      const note     = document.getElementById('addrNote')?.value || '';
+      if (coDeliveryBlock) coDeliveryBlock.style.display = 'block';
+      if (coDeliveryAddr) coDeliveryAddr.innerHTML =
+        `${city} ${district}<br/>${street}${note ? '<br/>' + note : ''}`;
+      if (coPickupLabelText) coPickupLabelText.textContent = '外送 / 預定時間';
+    } else {
+      if (coDeliveryBlock) coDeliveryBlock.style.display = 'none';
+      if (coPickupLabelText) coPickupLabelText.textContent = '自取時間';
+    }
+  }
+
+  function renderCheckout() {
+    const list = document.getElementById('coItemsList');
+    const totalEl = document.getElementById('coTotalAmount');
+    if (!list) return;
+
+    list.innerHTML = cart.map(item => {
+      const isGift = item.type === 'gift';
+      const metaLine = isGift ? `${item.zh} · ${item.spec}` : `${item.zh} · ${item.size}`;
+      const sub = (item.price * item.qty).toLocaleString();
+      return `
+        <div class="co-item-row">
+          <img class="co-item-img${isGift ? ' uk' : ''}" src="${item.img}" alt="${item.name}" />
+          <div>
+            <div class="co-item-name">THE ${item.name}</div>
+            <div class="co-item-sub">${metaLine}${item.qty > 1 ? ' × ' + item.qty : ''}</div>
+            ${!isGift ? `<div class="co-item-sub">袋 ${item.bagName}</div>` : ''}
+          </div>
+          <div class="co-item-price">NT$ ${sub}</div>
+        </div>`;
+    }).join('');
+
+    if (totalEl) totalEl.textContent = 'NT$ ' + cartTotal().toLocaleString();
+
+    // Pickup time — use global state.date / state.time (set in step 2)
+    const pickupVal = document.getElementById('coPickupVal');
+    if (pickupVal) {
+      if (state.date && state.time) {
+        const locStr = state.deliveryMethod === 'delivery' ? '外送到府' : 'KASS 西門町自取';
+        pickupVal.textContent = `${state.date}  ${state.time}  ·  ${locStr}`;
+      } else {
+        pickupVal.textContent = '請返回選擇時間';
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     TAPPAY CONFIG
+     ─────────────────────────────────────────────────────────────
+     沙盒模式：用官方測試帳號
+     上線時：把 TAPPAY_ENV 改成 'production'
+             並換上你的正式 APP_ID / APP_KEY / MERCHANT_ID
+  ═══════════════════════════════════════════════════════════════ */
+  const TAPPAY_CONFIG = {
+    APP_ID:      '11334',                          // ← 換成你的沙盒 App ID
+    APP_KEY:     'app_whdEWBH8e8Lzy4N6mTCpFMnIRWbGp1jWTSGhKm4Y8MjJNyVzJspKbdF6',  // ← 換成你的沙盒 App Key
+    MERCHANT_ID: 'KASS_MERCHANT',                  // ← 換成你的 Merchant ID
+    ENV:         'sandbox'                         // 'sandbox' | 'production'
+  };
+
+  // 沙盒測試卡號（給自己測試用）
+  const SANDBOX_CARDS = {
+    visa:       '4242 4242 4242 4242',
+    mastercard: '5555 5555 5555 4444',
+    jcb:        '3566 0020 2036 0505',
+    expiry:     '01 / 25',
+    cvv:        '123'
+  };
+
+  let tpReady       = false;   // TapPay 初始化完成
+  let tpCardValid   = false;   // 信用卡欄位全部有效
+  let currentPayMethod = 'card';
+
+  /* ── 初始化 TapPay ── */
+  function initTapPay() {
+    if (typeof TPDirect === 'undefined') {
+      console.warn('[KASS] TapPay SDK not loaded');
+      return;
+    }
+
+    TPDirect.setupSDK(
+      TAPPAY_CONFIG.APP_ID,
+      TAPPAY_CONFIG.APP_KEY,
+      TAPPAY_CONFIG.ENV
+    );
+
+    // ── Direct Pay（信用卡）設定 ──
+    const cardFields = {
+      number: {
+        element: '#tpCardNumber',
+        placeholder: '•••• •••• •••• ••••'
+      },
+      expirationDate: {
+        element: '#tpExpiry',
+        placeholder: 'MM / YY'
+      },
+      ccv: {
+        element: '#tpCcv',
+        placeholder: 'CVV'
+      }
+    };
+
+    const cardStyle = {
+      color:           'rgba(245,240,235,0.9)',
+      fontSize:        '15px',
+      fontFamily:      'Inter, monospace',
+      lineHeight:      '1',
+      fontSmoothing:   'antialiased',
+      ':focus':        { color: '#F5F0EB' },
+      '::placeholder': { color: 'rgba(255,255,255,0.2)' },
+    };
+
+    TPDirect.card.setup({
+      fields:           cardFields,
+      styles:           cardStyle,
+      isMaskCreditCardNumber: true,
+      maskCreditCardNumberRange: { beginIndex: 6, endIndex: 11 }
+    });
+
+    // 監聽欄位狀態
+    TPDirect.card.onUpdate(update => {
+      tpCardValid = update.canGetPrime;
+
+      // 更新各欄位邊框顏色
+      ['number','expirationDate','ccv'].forEach(field => {
+        const elMap = { number: 'tpCardNumber', expirationDate: 'tpExpiry', ccv: 'tpCcv' };
+        const el = document.getElementById(elMap[field]);
+        if (!el) return;
+        el.classList.remove('valid','invalid','focus');
+        const s = update.status[field];
+        if (s === TPDirect.STATUS_ERROR)   el.classList.add('invalid');
+        if (s === TPDirect.STATUS_SUCCESS) el.classList.add('valid');
+      });
+
+      // 更新按鈕狀態
+      updatePayBtn();
+    });
+
+    // ── Apple Pay 可用性偵測 ──
+    TPDirect.paymentRequestApi.checkAvailability(result => {
+      if (result.paymentRequest?.applePayAvailable) {
+        document.getElementById('tabApple').style.display = 'flex';
+      }
+      if (result.paymentRequest?.googlePayAvailable) {
+        document.getElementById('tabGoogle').style.display = 'flex';
+      }
+    });
+
+    tpReady = true;
+    console.log('[KASS] TapPay SDK initialized ✓', TAPPAY_CONFIG.ENV);
+
+    // 沙盒 banner：顯示測試卡號提示
+    if (TAPPAY_CONFIG.ENV === 'sandbox') {
+      const banner = document.getElementById('tpSandboxBanner');
+      if (banner) {
+        banner.innerHTML = `🧪 沙盒測試模式 &nbsp;·&nbsp;
+          測試卡號：<strong style="color:var(--white);">${SANDBOX_CARDS.visa}</strong>
+          &nbsp;到期：<strong style="color:var(--white);">${SANDBOX_CARDS.expiry}</strong>
+          &nbsp;CVV：<strong style="color:var(--white);">${SANDBOX_CARDS.cvv}</strong>`;
+      }
+    }
+  }
+
+  /* ── 切換付款方式 ── */
+  function switchPayMethod(method) {
+    currentPayMethod = method;
+    ['card','apple','google'].forEach(m => {
+      const tab   = document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1));
+      const panel = document.getElementById('payPanel' + m.charAt(0).toUpperCase() + m.slice(1));
+      if (tab)   tab.classList.toggle('active', m === method);
+      if (panel) panel.style.display = (m === method) ? 'block' : 'none';
+    });
+  }
+
+  /* ── 更新付款按鈕狀態 ── */
+  function updatePayBtn() {
+    const btn = document.getElementById('coSubmitBtn');
+    if (!btn) return;
+    if (currentPayMethod === 'card') {
+      btn.disabled = !tpCardValid;
+      const note = document.getElementById('tpCardNote');
+      if (note) note.textContent = tpCardValid ? '✓ 卡片資訊已驗證，可以付款' : '請輸入卡片資訊後付款';
+    } else {
+      btn.disabled = false;
+    }
+  }
+
+  /* ── 更新付款按鈕金額 ── */
+  function updateSubmitBtnAmount() {
+    const el = document.getElementById('submitTotalAmt');
+    if (el) el.textContent = cartTotal().toLocaleString();
+  }
+
+  /* ── Processing overlay ── */
+  function showProcessing(text) {
+    const ov = document.getElementById('tpProcessingOverlay');
+    const tx = document.getElementById('tpProcessingText');
+    if (tx) tx.textContent = text || '付款處理中';
+    if (ov) ov.classList.add('show');
+  }
+  function hideProcessing() {
+    const ov = document.getElementById('tpProcessingOverlay');
+    if (ov) ov.classList.remove('show');
+  }
+
+  /* ── Apple Pay ── */
+  function payWithApplePay() {
+    if (!tpReady) return;
+    const total = cartTotal();
+    TPDirect.paymentRequestApi.setupPaymentRequest({
+      supportedNetworks: ['VISA','MASTERCARD','AMEX','JCB'],
+      supportedMethods:  ['apple_pay'],
+      displayItems: cart.map(i => ({
+        label: `THE ${i.name} ${i.size || i.spec || ''} × ${i.qty}`,
+        amount: { currency: 'TWD', value: String(i.price * i.qty) }
+      })),
+      total: {
+        label: 'KASS',
+        amount: { currency: 'TWD', value: String(total) }
+      },
+      shippingType: 'pickup'
+    }, canMakePayment => {
+      if (!canMakePayment.canMakePayment) {
+        alert('此裝置不支援 Apple Pay，請使用信用卡付款。');
+        return;
+      }
+    });
+    TPDirect.paymentRequestApi.getPrime(result => {
+      if (result.status !== 0) {
+        alert('Apple Pay 付款失敗：' + result.msg);
+        return;
+      }
+      processPayment(result.prime);
+    });
+  }
+
+  /* ── Google Pay ── */
+  function payWithGooglePay() {
+    alert('Google Pay 需要在 HTTPS 正式環境下使用。\n請切換至信用卡付款，或部署後再測試。');
+  }
+
+  async function submitCheckout() {
+    const name  = document.getElementById('coName').value.trim();
+    const phone = document.getElementById('coPhone').value.trim();
+    const email = document.getElementById('coEmail').value.trim();
+    const note  = document.getElementById('coNote').value.trim();
+
+    // ── 驗證必填欄位 ──
+    if (!name || !phone) {
+      document.getElementById('coName').style.borderColor  = name  ? '' : 'var(--pink)';
+      document.getElementById('coPhone').style.borderColor = phone ? '' : 'var(--pink)';
+      const errEl = !name ? document.getElementById('coName') : document.getElementById('coPhone');
+      errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // ── 信用卡：先取得 TapPay prime token ──
+    if (currentPayMethod === 'card') {
+      if (!tpReady) {
+        showTpError('付款系統尚未就緒，請稍後再試。');
+        return;
+      }
+      if (!tpCardValid) {
+        showTpError('請確認信用卡資訊填寫正確。');
+        return;
+      }
+
+      showProcessing('取得付款授權中…');
+
+      TPDirect.card.getPrime(async result => {
+        if (result.status !== 0) {
+          hideProcessing();
+          showTpError('卡片驗證失敗：' + result.msg);
+          return;
+        }
+        // 取得 prime，繼續付款流程
+        await processPayment(result.card.prime, { name, phone, email, note });
+      });
+
+    } else {
+      // Apple Pay / Google Pay 已在各自函數處理
+      await processPayment(null, { name, phone, email, note });
+    }
+  }
+
+  /* ── 核心付款流程：呼叫後端 + 寫入訂單 ── */
+  async function processPayment(prime, customer) {
+    const { name, phone, email, note } = customer;
+
+    const deliveryAddr = state.deliveryMethod === 'delivery'
+      ? [
+          document.getElementById('addrCity')?.value     || '',
+          document.getElementById('addrDistrict')?.value || '',
+          document.getElementById('addrStreet')?.value   || '',
+          document.getElementById('addrNote')?.value     || ''
+        ].filter(Boolean).join(' ')
+      : '';
+
+    const orderNum = 'KASS-' + Date.now().toString().slice(-6);
+    const timeStr  = (state.date && state.time) ? state.date + '  ' + state.time : '—';
+    const total    = cartTotal();
+
+    const itemsJson = JSON.stringify(cart.map(item => ({
+      name:    item.name,
+      zh:      item.zh,
+      type:    item.type,
+      size:    item.size    || null,
+      spec:    item.spec    || null,
+      bagName: item.bagName || null,
+      price:   item.price,
+      qty:     item.qty
+    })));
+
+    showProcessing('付款處理中…');
+
+    try {
+      // ── Step 1: 呼叫後端 Vercel Function 完成扣款 ──
+      //    後端位置：/api/pay.js（等部署後啟用）
+      //    沙盒模式下跳過真實扣款，直接模擬成功
+      let payResult = { success: true, rec_trade_id: 'SANDBOX_' + Date.now() };
+
+      if (prime && TAPPAY_CONFIG.ENV !== 'sandbox') {
+        const payRes = await fetch('/api/pay', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prime,
+            amount:      total,
+            order_number: orderNum,
+            cardholder: {
+              name,
+              phone_number: phone,
+              email:        email || ''
+            },
+            details: '購買 KASS 蛋糕'
+          })
+        });
+        payResult = await payRes.json();
+        if (!payResult.success) throw new Error(payResult.msg || '付款失敗');
+      }
+
+      showProcessing('儲存訂單中…');
+
+      // ── Step 2: 寫入訂單資料庫 ──
+      const orderPayload = {
+        order_number:     orderNum,
+        customer_name:    name,
+        customer_phone:   phone,
+        customer_email:   email,
+        customer_note:    note,
+        delivery_method:  state.deliveryMethod,
+        delivery_address: deliveryAddr,
+        pickup_date:      state.date  || '',
+        pickup_time:      state.time  || '',
+        items:            itemsJson,
+        item_count:       cartCount(),
+        total_amount:     total,
+        status:           'confirmed'   // 付款成功才是 confirmed
+      };
+
+      const dbRes = await fetch('tables/orders', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(orderPayload)
+      });
+      if (!dbRes.ok) throw new Error('DB error: ' + dbRes.status);
+
+      console.log('[KASS] ✓ Order confirmed:', orderNum, 'rec_trade_id:', payResult.rec_trade_id);
+
+      hideProcessing();
+      showOrderSuccess(orderNum, name, phone, timeStr, deliveryAddr);
+
+    } catch (err) {
+      hideProcessing();
+      console.error('[KASS] Payment failed:', err);
+      showTpError('付款失敗：' + err.message + '\n\n請重試或換一張卡。');
+    }
+  }
+
+  /* ── 顯示付款錯誤 ── */
+  function showTpError(msg) {
+    let errNotice = document.getElementById('submitErrorNotice');
+    if (!errNotice) {
+      errNotice = document.createElement('div');
+      errNotice.id = 'submitErrorNotice';
+      errNotice.style.cssText = `
+        margin-top: 12px; padding: 14px 16px;
+        border: 1px solid rgba(221,149,180,0.4);
+        background: rgba(221,149,180,0.06);
+        color: var(--pink); font-size: 11px;
+        letter-spacing: 1px; line-height: 1.8;
+        font-family: 'Noto Sans TC', sans-serif;
+      `;
+      const btn = document.getElementById('coSubmitBtn');
+      if (btn) btn.parentNode.insertBefore(errNotice, btn.nextSibling);
+    }
+    errNotice.textContent = '⚠ ' + msg;
+    errNotice.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function showOrderSuccess(orderNum, name, phone, timeStr, deliveryAddr) {
+    document.getElementById('successOrderNum').textContent = 'ORDER #' + orderNum;
+
+    document.getElementById('successDetails').innerHTML = `
+      <div class="success-detail-row">
+        <span class="label">訂單編號</span>
+        <span class="val">#${orderNum}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="label">姓名</span>
+        <span class="val">${name}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="label">電話</span>
+        <span class="val">${phone}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="label">品項數</span>
+        <span class="val">${cartCount()} 件</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="label">訂單總計</span>
+        <span class="val" style="color:var(--amber);">NT$ ${cartTotal().toLocaleString()}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="label">${state.deliveryMethod === 'delivery' ? '外送時間' : '取件時間'}</span>
+        <span class="val">${timeStr}</span>
+      </div>
+      ${state.deliveryMethod === 'delivery' && deliveryAddr ? `
+      <div class="success-detail-row">
+        <span class="label">外送地址</span>
+        <span class="val" style="text-align:right;max-width:200px;line-height:1.5;">${deliveryAddr}</span>
+      </div>` : `
+      <div class="success-detail-row">
+        <span class="label">自取地點</span>
+        <span class="val">KASS · 西門町</span>
+      </div>`}
+    `;
+
+    // Clear cart
+    cart = [];
+    saveCart();
+    updateCartBadges();
+
+    // Show success screen
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('orderSuccess').classList.add('active');
+    document.getElementById('orderBar').classList.remove('visible');
+    document.getElementById('spendBar').classList.remove('visible');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════════════════════════════ */
+  let state = {
+    currentStep: 1,
+    deliveryMethod: 'pickup',   // 'pickup' | 'delivery'
+    category: null,             // 'cake' | 'gift'
+    flavourId: null,
+    giftId: null,
+    size: null,
+    step3Panel: 'catPanel',     // current sub-panel inside step3
+    bagColor: '#1a1714',
+    bagName: 'Noir',
+    boxColor: '#1a1714',
+    boxName: 'Noir',
+    date: null,
+    time: null
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     NAVIGATION
+  ═══════════════════════════════════════════════════════════════ */
+  // New 4-step flow:
+  // Step 1: Pickup/Delivery method
+  // Step 2: Date & Time
+  // Step 3: Product selection (cat → flavour/gift → size → bag)
+  // Step 4: Checkout
+
+  function goToStep(step) {
+    // Hide all step panels
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById('step' + step);
+    if (panel) panel.classList.add('active');
+    state.currentStep = step;
+
+    // Progress bar: 4 steps total
+    const pct = ((step - 1) / 3) * 100;   // step1=0%, step2=33%, step3=66%, step4=100%
+    document.getElementById('progressFill').style.width = pct + '%';
+
+    // Nav label
+    const navLabel = document.getElementById('navStepLabel');
+    if (navLabel) navLabel.innerHTML = `Step <span id="navStepNum">${step}</span> of 4`;
+
+    // Step 3: ensure correct sub-panel is visible
+    if (step === 3) {
+      const panel = state.step3Panel || 'catPanel';
+      showStep3Panel(panel);
+    }
+
+    // Update step2 location display based on delivery method
+    if (step === 2) {
+      const locLabel = document.getElementById('step2LocationLabel');
+      const locVal   = document.getElementById('step2LocationVal');
+      if (state.deliveryMethod === 'delivery') {
+        if (locLabel) locLabel.textContent = '外送地址（結帳時確認）';
+        if (locVal)   locVal.innerHTML = '<span style="color:var(--amber);font-size:12px;font-family:\'Noto Sans TC\';">填寫地址後於結帳確認運費</span>';
+      } else {
+        if (locLabel) locLabel.textContent = '自取地址';
+        if (locVal)   locVal.innerHTML = 'KASS · Ximending<br/><span style="color:var(--grey);font-size:11px;font-family:\'Noto Sans TC\';font-weight:300;">台北市萬華區 西門町</span>';
+      }
+    }
+
+    updateOrderBar();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function nextStep() {
+    const step  = state.currentStep;
+    const cat   = state.category;
+    const panel = state.step3Panel;
+
+    // ── Step 1: method already chosen via selectDelivery() ──
+    if (step === 1) {
+      goToStep(2);
+      return;
+    }
+
+    // ── Step 2: Date & Time ──
+    if (step === 2) {
+      if (!(state.date && state.time)) return;
+      goToStep(3);
+      return;
+    }
+
+    // ── Step 3: Product Selection (sub-panels) ──
+    if (step === 3) {
+      if (panel === 'catPanel') {
+        // Need to pick a category first
+        return;
+
+      } else if (panel === 'flavourPanel') {
+        // Cake: flavour → size
+        if (!state.flavourId) return;
+        showStep3Panel('sizePanel');
+        updateOrderBar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } else if (panel === 'giftPanel') {
+        // Gift: gift selected → add to cart immediately (no size/bag)
+        if (!state.giftId) return;
+        addToCart();
+
+      } else if (panel === 'sizePanel') {
+        // Cake: size → bag colour
+        if (!state.size) return;
+        showStep3Panel('bagPanel');
+        updateOrderBar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } else if (panel === 'bagPanel') {
+        // Cake: bag chosen → add to cart
+        addToCart();
+      }
+      return;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     BUILD FLAVOUR GRID
+  ═══════════════════════════════════════════════════════════════ */
+  function buildFlavourGrid() {
+    const grid = document.getElementById('flavourGrid');
+    grid.innerHTML = CAKES.map(c => `
+      <div class="flavour-poster" id="fp_${c.id}" onclick="selectFlavour('${c.id}')">
+        <div class="poster-img-wrap">
+          <img src="${c.img}" alt="${c.name}" loading="lazy" />
+          <div class="poster-ratio-badge">US ONE-SHEET</div>
+          <div class="poster-selected-mark">✓</div>
+        </div>
+        <div class="poster-caption">
+          <div class="poster-the">${c.the}</div>
+          <div class="poster-name-text">${c.name}<br/><span style="font-weight:300;font-size:0.75em;color:var(--grey);">${c.zh}</span></div>
+          <div class="poster-price-from">
+            ${Object.keys(c.prices).length > 1
+              ? `From <span>NT$ ${Math.min(...Object.values(c.prices)).toLocaleString()}</span>`
+              : `<span>NT$ ${Object.values(c.prices)[0].toLocaleString()}</span>`}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function buildGiftGrid() {
+    const grid = document.getElementById('giftGrid');
+    grid.innerHTML = GIFTS.map(g => `
+      <div class="giftbox-poster" id="gp_${g.id}" onclick="selectGift('${g.id}')">
+        <div class="giftbox-img-wrap">
+          <img src="${g.img}" alt="${g.name}" loading="lazy" />
+          <div class="giftbox-ratio-badge">UK QUAD</div>
+          <div class="giftbox-selected-mark">✓</div>
+        </div>
+        <div class="giftbox-caption">
+          <div class="giftbox-the">${g.the}</div>
+          <div class="giftbox-name-text">${g.name}<br/><span style="font-weight:300;font-size:0.75em;color:var(--grey);">${g.zh} · ${g.spec}</span></div>
+          <div class="giftbox-price">NT$ ${g.price.toLocaleString()}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SELECTION HANDLERS
+  ═══════════════════════════════════════════════════════════════ */
+  function selectFlavour(id) {
+    state.flavourId = id;
+    state.size = null;
+    document.querySelectorAll('.flavour-poster').forEach(p => p.classList.remove('selected'));
+    document.getElementById('fp_' + id)?.classList.add('selected');
+
+    // Update size prices for this cake
+    const cake = CAKES.find(c => c.id === id);
+    if (cake) {
+      [4,6,8,9].forEach(s => {
+        const el = document.getElementById('price' + s);
+        if (el) el.textContent = cake.prices[s] ? `NT$ ${cake.prices[s].toLocaleString()}` : '—';
+        const card = document.getElementById('size' + s);
+        if (card) {
+          card.style.opacity = cake.available.includes(s) ? '1' : '0.25';
+          card.style.pointerEvents = cake.available.includes(s) ? 'auto' : 'none';
+        }
+      });
+      // Flavour label on size panel
+      const flLabel = document.getElementById('selectedFlavourLabel');
+      if (flLabel) flLabel.innerHTML =
+        `<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--pink);margin-bottom:6px;">THE</div>
+         <strong style="font-size:20px;font-weight:900;letter-spacing:-0.03em;">${cake.name}</strong>
+         <div style="font-size:11px;color:var(--grey);margin-top:4px;font-family:'Noto Sans TC';">${cake.zh}</div>`;
+    }
+
+    // Auto-advance to size selection
+    showStep3Panel('sizePanel');
+    updateOrderBar();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function selectGift(id) {
+    state.giftId = id;
+    document.querySelectorAll('.giftbox-poster').forEach(p => p.classList.remove('selected'));
+    document.getElementById('gp_' + id)?.classList.add('selected');
+    updateOrderBar();
+    // Gift: no further steps in step3 — just enable "加入購物車" button
+  }
+
+  function selectSize(s) {
+    state.size = s;
+    [4,6,8,9].forEach(x => document.getElementById('size'+x)?.classList.remove('selected'));
+    document.getElementById('size' + s)?.classList.add('selected');
+
+    // Auto-advance to bag colour
+    showStep3Panel('bagPanel');
+    updateOrderBar();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function selectBag(el) {
+    document.querySelectorAll('#bagColors .color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    state.bagColor = el.dataset.color;
+    state.bagName  = el.dataset.name;
+    const bag = document.getElementById('previewBag');
+    if (bag) bag.style.backgroundColor = state.bagColor;
+    updateOrderBar();
+  }
+
+  function selectBox(el) {
+    document.querySelectorAll('#boxColors .color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    state.boxColor = el.dataset.color;
+    state.boxName  = el.dataset.name;
+    const box = document.getElementById('previewBox');
+    const lid = document.getElementById('previewLid');
+    if (box) box.style.backgroundColor = state.boxColor;
+    if (lid) lid.style.backgroundColor = state.boxColor;
+    updateOrderBar();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CALENDAR
+  ═══════════════════════════════════════════════════════════════ */
+  let calYear, calMonth;
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+  function initCalendar() {
+    const now = new Date();
+    calYear  = now.getFullYear();
+    calMonth = now.getMonth();
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    document.getElementById('calMonthLabel').textContent =
+      MONTHS[calMonth] + ' · ' + calYear;
+    const grid  = document.getElementById('dateGrid');
+    const today = new Date();
+    const first = new Date(calYear, calMonth, 1).getDay();
+    const days  = new Date(calYear, calMonth + 1, 0).getDate();
+    let html = '';
+    // Empty cells
+    for (let i = 0; i < first; i++) html += '<div class="date-cell empty"></div>';
+    for (let d = 1; d <= days; d++) {
+      const dt  = new Date(calYear, calMonth, d);
+      const isPast = dt < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const isTod  = dt.toDateString() === today.toDateString();
+      const isSel  = state.date === `${calYear}-${calMonth+1}-${d}`;
+      // Closed Mondays
+      const isClosed = dt.getDay() === 1;
+      const cls = [
+        'date-cell',
+        isPast || isClosed ? 'disabled' : '',
+        isTod  ? 'today'    : '',
+        isSel  ? 'selected' : ''
+      ].join(' ').trim();
+      const onclick = (!isPast && !isClosed)
+        ? `onclick="selectDate(${calYear},${calMonth+1},${d})"`
+        : '';
+      html += `<div class="${cls}" ${onclick}>${d}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function selectDate(y, m, d) {
+    state.date = `${y}-${m}-${d}`;
+    state.time = null;
+    document.querySelectorAll('.time-slot').forEach(t => t.classList.remove('selected'));
+    renderCalendar();
+    // Update date label in step header
+    const lbl = document.getElementById('selectedDateLabel');
+    if (lbl) lbl.innerHTML = `<strong style="font-size:18px;font-weight:900;letter-spacing:-0.03em;color:var(--white);">${m}/${d}</strong><br/><span style="font-size:10px;color:var(--grey);letter-spacing:2px;">請選擇時段</span>`;
+    updateOrderBar();
+  }
+
+  function prevMonth() {
+    if (calMonth === 0) { calMonth = 11; calYear--; }
+    else calMonth--;
+    renderCalendar();
+  }
+  function nextMonth() {
+    if (calMonth === 11) { calMonth = 0; calYear++; }
+    else calMonth++;
+    renderCalendar();
+  }
+
+  function selectTime(el, t) {
+    document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    state.time = t;
+    // Update date/time label in step header
+    const lbl = document.getElementById('selectedDateLabel');
+    if (lbl && state.date) {
+      const parts = state.date.split('-');
+      lbl.innerHTML = `<strong style="font-size:18px;font-weight:900;letter-spacing:-0.03em;color:var(--white);">${parts[1]}/${parts[2]}</strong><br/><span style="font-size:14px;font-weight:700;color:var(--pink);letter-spacing:2px;">${t}</span>`;
+    }
+    updateOrderBar();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ORDER BAR
+  ═══════════════════════════════════════════════════════════════ */
+  function updateOrderBar() {
+    const bar   = document.getElementById('orderBar');
+    const text  = document.getElementById('orderSummaryText');
+    const total = document.getElementById('orderTotal');
+    const btn   = document.getElementById('btnNext');
+    const step  = state.currentStep;
+    const panel = state.step3Panel;
+
+    if (!bar || !btn) return;
+
+    bar.classList.remove('visible');
+    btn.classList.remove('amber');
+    btn.style.background = '';
+
+    // ── Step 1: hide bar (user taps a card directly) ──
+    if (step === 1) return;
+
+    // ── Step 2: Date & Time ──
+    if (step === 2) {
+      bar.classList.add('visible');
+      let dateStr = state.date ? state.date : '尚未選擇日期';
+      let timeStr = state.time ? state.time : '尚未選擇時段';
+      text.innerHTML = `<strong>${dateStr}</strong>  ${state.time ? '· ' + timeStr : ''}`;
+      total.textContent = '';
+      btn.textContent = 'Next Step →';
+      btn.disabled = !(state.date && state.time);
+      return;
+    }
+
+    // ── Step 3: Product selection ──
+    if (step === 3) {
+      let summary = '';
+      let price   = 0;
+      let canNext = false;
+      let addToCartMode = false;
+
+      // Date/time summary prefix (always shown)
+      const datePrefix = state.date ? `${state.date} ${state.time || ''}` : '';
+
+      if (panel === 'catPanel') {
+        // Waiting for category choice — show date chosen
+        if (state.date) {
+          bar.classList.add('visible');
+          text.innerHTML = `取件時間：<strong>${datePrefix}</strong>`;
+          total.textContent = '';
+          btn.disabled = true;
+          btn.textContent = '請選擇品項';
+        }
+        return;
+
+      } else if (panel === 'flavourPanel') {
+        const cake = CAKES.find(c => c.id === state.flavourId);
+        if (cake) {
+          summary = `<strong>THE ${cake.name}</strong> · ${cake.zh}`;
+          canNext = true;
+        } else {
+          summary = '請選擇口味';
+          canNext = false;
+        }
+
+      } else if (panel === 'giftPanel') {
+        const gift = GIFTS.find(g => g.id === state.giftId);
+        if (gift) {
+          summary = `<strong>THE ${gift.name}</strong> · ${gift.spec}`;
+          price = gift.price;
+          canNext = true;
+          addToCartMode = true;
+          btn.classList.add('amber');
+        } else {
+          summary = '請選擇禮盒';
+          canNext = false;
+        }
+
+      } else if (panel === 'sizePanel') {
+        const cake = CAKES.find(c => c.id === state.flavourId);
+        if (cake) {
+          summary = `<strong>THE ${cake.name}</strong>`;
+          if (state.size && cake.prices[state.size]) {
+            summary += ` · ${state.size}吋`;
+            price = cake.prices[state.size];
+            canNext = true;
+          } else {
+            canNext = false;
+          }
+        }
+
+      } else if (panel === 'bagPanel') {
+        const cake = CAKES.find(c => c.id === state.flavourId);
+        if (cake && state.size) {
+          summary = `<strong>THE ${cake.name}</strong> · ${state.size}吋 · 袋 ${state.bagName}`;
+          price = cake.prices[state.size];
+          canNext = true;
+          addToCartMode = true;
+        }
+      }
+
+      bar.classList.add('visible');
+      text.innerHTML = summary;
+      total.textContent = price ? `NT$ ${price.toLocaleString()}` : '';
+      btn.disabled = !canNext;
+
+      if (addToCartMode) {
+        btn.textContent = '加入購物車 +';
+        btn.style.background = canNext ? 'var(--amber)' : '';
+      } else {
+        btn.textContent = 'Next Step →';
+        btn.style.background = '';
+      }
+      return;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SPEND PROGRESS BAR — 滿額促銷進度條
+  ═══════════════════════════════════════════════════════════════ */
+
+  // Milestones: { amount, reward, type }
+  const SPEND_MILESTONES = [
+    { amount: 800,  reward: '免費緞帶包裝',    icon: '🎀', type: 'pink'  },
+    { amount: 1500, reward: '贈送手寫祝賀卡',  icon: '💌', type: 'pink'  },
+    { amount: 2500, reward: '禮品袋升級 Noir', icon: '✦', type: 'gold'  },
+  ];
+
+  // Upsell suggestions: cheap items that push people over a milestone
+  const UPSELL_ITEMS = [
+    { id: 'canele-box',   type: 'gift', label: 'Canelé Box',       sub: '四入裝', price: 320 },
+    { id: 'cinnamon-box', type: 'gift', label: 'Cinnamon Roll Box', sub: '三入裝', price: 500 },
+    { id: 'chestnut',     type: 'cake', label: 'Chestnut Cake',     sub: '4吋',    price: 780 },
+    { id: 'strawberry',   type: 'cake', label: 'Strawberry Cake',   sub: '4吋',    price: 780 },
+  ];
+
+  function updateSpendBar() {
+    const total   = cartTotal();
+    const count   = cartCount();
+    const maxAmt  = SPEND_MILESTONES[SPEND_MILESTONES.length - 1].amount;
+    const pct     = Math.min(total / maxAmt * 100, 100);
+
+    // ── Top spend-bar (visible when cart has items) ──
+    const spendBar  = document.getElementById('spendBar');
+    const spendFill = document.getElementById('spendFill');
+    const spendText = document.getElementById('spendBarText');
+    const spendReward = document.getElementById('spendReward');
+    const spendUpsell = document.getElementById('spendUpsell');
+
+    if (spendBar) {
+      if (count > 0) {
+        spendBar.classList.add('visible');
+      } else {
+        spendBar.classList.remove('visible');
+        return;
+      }
+    }
+
+    if (spendFill) spendFill.style.width = pct + '%';
+    if (spendReward) spendReward.textContent = 'NT$ ' + total.toLocaleString();
+
+    // Find next milestone not yet reached
+    const nextMs = SPEND_MILESTONES.find(m => total < m.amount);
+    const allDone = !nextMs;
+
+    if (spendText) {
+      if (allDone) {
+        spendText.innerHTML = `<span class="text-amber">✦ 全部優惠已解鎖！</span>`;
+      } else {
+        const diff = nextMs.amount - total;
+        spendText.innerHTML = `再 <strong>NT$ ${diff.toLocaleString()}</strong> 即可獲得 <span class="text-pink">${nextMs.icon} ${nextMs.reward}</span>`;
+      }
+    }
+
+    // Render upsell chips — show items that cost ≤ gap to next milestone
+    if (spendUpsell) {
+      if (allDone || !nextMs) {
+        spendUpsell.innerHTML = '';
+        spendUpsell.style.display = 'none';
+      } else {
+        const gap = nextMs.amount - total;
+        // Show items that cost <= gap+300 (so they can nudge them over)
+        const suggestions = UPSELL_ITEMS.filter(u => u.price <= gap + 300).slice(0, 4);
+        if (suggestions.length > 0) {
+          spendUpsell.style.display = 'flex';
+          spendUpsell.innerHTML = suggestions.map(u => `
+            <div class="upsell-chip" onclick="quickAddUpsell('${u.id}','${u.type}')">
+              <span class="chip-plus">+</span>
+              <span>${u.label}</span>
+              <span style="font-size:8px;color:var(--grey);margin-left:2px;">${u.sub}</span>
+              <span class="chip-price">NT$ ${u.price.toLocaleString()}</span>
+            </div>`).join('');
+        } else {
+          spendUpsell.innerHTML = '';
+          spendUpsell.style.display = 'none';
+        }
+      }
+    }
+
+    // ── Cart Drawer spend block ──
+    const cBlock  = document.getElementById('cartSpendBlock');
+    const cFill   = document.getElementById('cartSpendFill');
+    const cLabel  = document.getElementById('cartSpendLabel');
+    const cMs800  = document.getElementById('ms800');
+    const cMs1500 = document.getElementById('ms1500');
+    const cMs2500 = document.getElementById('ms2500');
+    const upsellRow = document.getElementById('cartUpsellRow');
+
+    if (cBlock) cBlock.style.display = count > 0 ? 'block' : 'none';
+    if (cFill)  cFill.style.width  = pct + '%';
+
+    // Milestone dots styling
+    if (cMs800)  cMs800.className  = total >= 800  ? 'hit' : '';
+    if (cMs1500) cMs1500.className = total >= 1500 ? 'hit' : '';
+    if (cMs2500) cMs2500.className = total >= 2500 ? 'hit' : '';
+
+    if (cLabel) {
+      const reached = SPEND_MILESTONES.filter(m => total >= m.amount);
+      const latestHit = reached[reached.length - 1];
+      if (allDone) {
+        cLabel.innerHTML = `<span class="clr-amber">✦ 全部優惠解鎖！</span>`;
+      } else if (latestHit) {
+        cLabel.innerHTML = `已獲得 <span class="clr-pink">${latestHit.icon} ${latestHit.reward}</span>　⟶ 再 <strong>NT$ ${(nextMs.amount - total).toLocaleString()}</strong> 解鎖下一個`;
+      } else {
+        cLabel.innerHTML = `再 <strong>NT$ ${(nextMs.amount - total).toLocaleString()}</strong> 即可獲得 <span class="clr-pink">${nextMs.icon} ${nextMs.reward}</span>`;
+      }
+    }
+
+    // Upsell chips in drawer
+    if (upsellRow) {
+      if (!allDone && nextMs) {
+        const gap = nextMs.amount - total;
+        const suggestions = UPSELL_ITEMS.filter(u => u.price <= gap + 300).slice(0, 3);
+        if (suggestions.length > 0) {
+          upsellRow.style.display = 'flex';
+          upsellRow.innerHTML = `
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+                        color:var(--grey);flex-shrink:0;align-self:center;">加購推薦</div>` +
+            suggestions.map(u => `
+              <div class="cart-upsell-chip" onclick="quickAddUpsell('${u.id}','${u.type}')">
+                <div class="cut-name">${u.label}</div>
+                <div class="cut-sub">${u.sub}</div>
+                <div class="cut-price">+ NT$ ${u.price.toLocaleString()}</div>
+              </div>`).join('');
+        } else {
+          upsellRow.style.display = 'none';
+        }
+      } else {
+        upsellRow.style.display = 'none';
+      }
+    }
+  }
+
+  // Quick-add from upsell chip (goes straight to cart with defaults)
+  function quickAddUpsell(productId, type) {
+    if (type === 'gift') {
+      const gift = GIFTS.find(g => g.id === productId);
+      if (!gift) return;
+      const item = {
+        id: Date.now() + '_' + Math.random().toString(36).slice(2),
+        type: 'gift',
+        productId: gift.id,
+        name: gift.name,
+        zh: gift.zh,
+        spec: gift.spec,
+        img: gift.img,
+        bagColor: '#1a1714', bagName: 'Noir',
+        boxColor: '#1a1714', boxName: 'Noir',
+        date: null, time: null,
+        price: gift.price,
+        qty: 1
+      };
+      cart.push(item);
+    } else if (type === 'cake') {
+      const cake = CAKES.find(c => c.id === productId);
+      if (!cake) return;
+      const defaultSize = cake.available[0];
+      const item = {
+        id: Date.now() + '_' + Math.random().toString(36).slice(2),
+        type: 'cake',
+        productId: cake.id,
+        name: cake.name,
+        zh: cake.zh,
+        img: cake.img,
+        size: defaultSize + '吋',
+        bagColor: '#1a1714', bagName: 'Noir',
+        boxColor: '#1a1714', boxName: 'Noir',
+        date: null, time: null,
+        price: cake.prices[defaultSize],
+        qty: 1
+      };
+      cart.push(item);
+    }
+    saveCart();
+    updateCartBadges();
+    renderCartDrawer();
+    updateSpendBar();
+    // Pulse animation feedback
+    const fill = document.getElementById('cartSpendFill');
+    if (fill) {
+      fill.style.transition = 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      setTimeout(() => { fill.style.transition = 'width 0.5s ease'; }, 900);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════════════ */
+  buildFlavourGrid();
+  buildGiftGrid();
+  initCalendar();
+  updateCartBadges();   // restore badge from localStorage on page load
+  renderCartDrawer();   // pre-render drawer if cart has items
+  updateSpendBar();     // init spend bar
+
+  // TapPay SDK 初始化（SDK script 載入後才執行）
+  if (typeof TPDirect !== 'undefined') {
+    initTapPay();
+  } else {
+    // SDK 非同步載入，等待 load 事件
+    const sdkScript = document.querySelector('script[src*="tappaysdk"]');
+    if (sdkScript) {
+      sdkScript.addEventListener('load', initTapPay);
+    }
+  }
+
+  // Step 6 responsive
+  window.addEventListener('resize', () => {
+    if (window.innerWidth < 768) {
+      const co = document.querySelector('.checkout-layout');
+      if (co) co.style.gridTemplateColumns = '1fr';
+    }
+  });
+  </script>
+
+</body>
+</html>
